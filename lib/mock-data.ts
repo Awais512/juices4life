@@ -1,4 +1,6 @@
-import type { User, TaskItem, KanbanColumn, RolePermissions, SidebarLink } from "@/types";
+import type { User, TaskItem, KanbanColumn, SidebarLink, PermissionAction } from "@/types";
+
+const ALL_PERMISSIONS: PermissionAction[] = ["create", "read", "update", "delete"];
 
 export const MOCK_USERS: User[] = [
   {
@@ -10,6 +12,7 @@ export const MOCK_USERS: User[] = [
     department: "Management",
     createdAt: new Date("2024-01-15"),
     isActive: true,
+    permissions: [...ALL_PERMISSIONS],
   },
   {
     id: "u2",
@@ -20,6 +23,7 @@ export const MOCK_USERS: User[] = [
     department: "Production",
     createdAt: new Date("2024-02-20"),
     isActive: true,
+    permissions: ["read", "update"],
   },
   {
     id: "u3",
@@ -30,6 +34,7 @@ export const MOCK_USERS: User[] = [
     department: "Sales",
     createdAt: new Date("2024-03-10"),
     isActive: true,
+    permissions: ["read"],
   },
   {
     id: "u4",
@@ -40,6 +45,7 @@ export const MOCK_USERS: User[] = [
     department: "Marketing",
     createdAt: new Date("2024-04-05"),
     isActive: true,
+    permissions: ["read", "update", "create"],
   },
   {
     id: "u5",
@@ -50,6 +56,7 @@ export const MOCK_USERS: User[] = [
     department: "Product",
     createdAt: new Date("2024-05-12"),
     isActive: true,
+    permissions: ["read", "update"],
   },
   {
     id: "u6",
@@ -60,6 +67,7 @@ export const MOCK_USERS: User[] = [
     department: "Operations",
     createdAt: new Date("2024-01-01"),
     isActive: true,
+    permissions: [...ALL_PERMISSIONS],
   },
 ];
 
@@ -196,11 +204,6 @@ export const MOCK_TASKS: TaskItem[] = [
   },
 ];
 
-export const ROLE_PERMISSIONS: RolePermissions = {
-  admin: ["create", "read", "update", "delete"],
-  employee: ["read"],
-};
-
 export const MOCK_CURRENT_USER: User = MOCK_USERS[0];
 
 export function getMockUserById(id: string): User | undefined {
@@ -230,14 +233,6 @@ export const SIDEBAR_LINKS: SidebarLink[] = [
   { label: "Employees", href: "/employees", icon: "Users" },
   { label: "Permissions", href: "/permissions", icon: "Shield" },
 ];
-
-export function getStatusColor(status: TaskItem["status"]): string {
-  switch (status) {
-    case "todo": return "text-muted-foreground";
-    case "in-progress": return "text-primary";
-    case "done": return "text-emerald-500";
-  }
-}
 
 export function getPriorityColor(priority: TaskItem["priority"]): string {
   switch (priority) {

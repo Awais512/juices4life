@@ -15,6 +15,7 @@ export interface User {
   department: string;
   createdAt: Date;
   isActive: boolean;
+  permissions: PermissionAction[];
 }
 
 export interface TaskItem {
@@ -54,7 +55,7 @@ export interface AuthResponse {
   token: string;
 }
 
-export type RolePermissions = Record<UserRole, PermissionAction[]>;
+
 
 export interface SidebarLink {
   label: string;
@@ -62,9 +63,4 @@ export interface SidebarLink {
   icon: string;
 }
 
-export interface EmployeeFormData {
-  name: string;
-  email: string;
-  role: UserRole;
-  department: string;
-}
+
