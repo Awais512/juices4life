@@ -29,11 +29,12 @@ import { cn } from "@/lib/utils";
 
 interface AddTaskDialogProps {
   onTaskCreate: (task: TaskItem) => void;
+  defaultToBacklog?: boolean;
 }
 
 const DEFAULT_PRIORITY: TaskPriority = "medium";
 
-export function AddTaskDialog({ onTaskCreate }: AddTaskDialogProps) {
+export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -86,7 +87,7 @@ export function AddTaskDialog({ onTaskCreate }: AddTaskDialogProps) {
       id: `t${Date.now()}`,
       title: title.trim(),
       description: description.trim(),
-      status: "todo",
+      status: defaultToBacklog ? "backlog" : "todo",
       priority,
       assigneeId,
       createdBy: MOCK_CURRENT_USER.id,
@@ -113,7 +114,9 @@ export function AddTaskDialog({ onTaskCreate }: AddTaskDialogProps) {
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">Create Task</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
-            Add a new task to the board
+            {defaultToBacklog
+              ? "Add a new item to the backlog"
+              : "Add a new task to the board"}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

@@ -1,4 +1,4 @@
-import type { User, TaskItem, KanbanColumn, SidebarLink, PermissionAction } from "@/types";
+import type { User, TaskItem, KanbanColumn, SidebarLink, PermissionAction, Comment } from "@/types";
 
 const ALL_PERMISSIONS: PermissionAction[] = ["create", "read", "update", "delete"];
 
@@ -202,6 +202,115 @@ export const MOCK_TASKS: TaskItem[] = [
     dueDate: new Date("2025-04-30"),
     tags: ["marketing"],
   },
+  {
+    id: "t11",
+    title: "Mobile app push notifications",
+    description: "Implement push notification system for the mobile app using Firebase Cloud Messaging with customizable user preferences.",
+    status: "backlog",
+    priority: "medium",
+    assigneeId: "u4",
+    createdBy: "u1",
+    createdAt: new Date("2025-05-06"),
+    updatedAt: new Date("2025-05-06"),
+    dueDate: null,
+    tags: ["mobile", "backend"],
+  },
+  {
+    id: "t12",
+    title: "Dark mode for admin panel",
+    description: "Add dark mode support to the admin dashboard with persistent user preference and system-wide toggle.",
+    status: "backlog",
+    priority: "low",
+    assigneeId: "u2",
+    createdBy: "u6",
+    createdAt: new Date("2025-05-07"),
+    updatedAt: new Date("2025-05-07"),
+    dueDate: null,
+    tags: ["frontend", "ui"],
+  },
+  {
+    id: "t13",
+    title: "Export reports as PDF",
+    description: "Allow users to export dashboard reports and task lists as formatted PDF documents with custom date ranges.",
+    status: "backlog",
+    priority: "medium",
+    assigneeId: "u4",
+    createdBy: "u1",
+    createdAt: new Date("2025-05-08"),
+    updatedAt: new Date("2025-05-08"),
+    dueDate: new Date("2025-06-15"),
+    tags: ["feature", "reports"],
+  },
+  {
+    id: "t14",
+    title: "Integrate Slack notifications",
+    description: "Send task updates, mentions, and deadline reminders to configured Slack channels via webhooks.",
+    status: "backlog",
+    priority: "low",
+    assigneeId: "u3",
+    createdBy: "u6",
+    createdAt: new Date("2025-05-09"),
+    updatedAt: new Date("2025-05-09"),
+    dueDate: null,
+    tags: ["integration", "notifications"],
+  },
+];
+
+export const MOCK_COMMENTS: Comment[] = [
+  {
+    id: "c1",
+    taskId: "t3",
+    authorId: "u2",
+    parentId: null,
+    content: "I've finished the initial wireframes. The charts look great on mobile. One thing — we might want to reconsider the color palette for accessibility.",
+    createdAt: new Date("2025-05-06T10:30:00"),
+    updatedAt: new Date("2025-05-06T10:30:00"),
+  },
+  {
+    id: "c2",
+    taskId: "t3",
+    authorId: "u1",
+    parentId: "c1",
+    content: "Good point. Let's use the high-contrast palette from the design system. I'll update the spec.",
+    createdAt: new Date("2025-05-06T11:15:00"),
+    updatedAt: new Date("2025-05-06T11:15:00"),
+  },
+  {
+    id: "c3",
+    taskId: "t3",
+    authorId: "u4",
+    parentId: null,
+    content: "Backend APIs for the analytics data are ready in staging. The /metrics endpoint returns everything you need. Let me know if you need additional aggregation.",
+    createdAt: new Date("2025-05-07T09:00:00"),
+    updatedAt: new Date("2025-05-07T09:00:00"),
+  },
+  {
+    id: "c4",
+    taskId: "t6",
+    authorId: "u6",
+    parentId: null,
+    content: "The onboarding flow design is complete. I've added the prototype link in the description. Feedback welcome!",
+    createdAt: new Date("2025-05-05T14:00:00"),
+    updatedAt: new Date("2025-05-05T14:00:00"),
+  },
+  {
+    id: "c5",
+    taskId: "t6",
+    authorId: "u1",
+    parentId: "c4",
+    content: "Looks solid. Let's schedule a quick review session for tomorrow morning.",
+    createdAt: new Date("2025-05-05T16:30:00"),
+    updatedAt: new Date("2025-05-05T16:30:00"),
+  },
+  {
+    id: "c6",
+    taskId: "t1",
+    authorId: "u1",
+    parentId: null,
+    content: "Let's prioritize this for the current sprint. The landing page needs to be ready before the Q3 campaign launch.",
+    createdAt: new Date("2025-05-08T08:00:00"),
+    updatedAt: new Date("2025-05-08T08:00:00"),
+  },
 ];
 
 export const MOCK_CURRENT_USER: User = MOCK_USERS[0];
@@ -231,6 +340,7 @@ export function getKanbanColumns(): KanbanColumn[] {
 export const SIDEBAR_LINKS: SidebarLink[] = [
   { label: "Dashboard", href: "/", icon: "LayoutDashboard" },
   { label: "Tasks", href: "/tasks", icon: "CheckSquare" },
+  { label: "Backlog", href: "/backlog", icon: "Lightbulb" },
   { label: "Employees", href: "/employees", icon: "Users" },
   { label: "Permissions", href: "/permissions", icon: "Shield" },
 ];

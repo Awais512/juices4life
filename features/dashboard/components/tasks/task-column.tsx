@@ -13,6 +13,7 @@ interface TaskColumnProps {
 }
 
 const columnStyles: Record<TaskStatus, { accent: string; label: string }> = {
+  backlog: { accent: "bg-violet-500/50", label: "text-violet-500/50" },
   todo: { accent: "bg-muted-foreground", label: "text-muted-foreground" },
   "in-progress": { accent: "bg-primary", label: "text-primary" },
   review: { accent: "bg-violet-500", label: "text-violet-500" },

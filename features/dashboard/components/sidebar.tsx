@@ -23,6 +23,7 @@ import {
   ChevronRight,
   PanelLeft,
   PanelLeftClose,
+  Lightbulb,
 } from "lucide-react";
 import { SIDEBAR_LINKS, MOCK_CURRENT_USER } from "@/lib/mock-data";
 import { useSidebar } from "./sidebar-context";
@@ -30,6 +31,7 @@ import { useSidebar } from "./sidebar-context";
 const linkIcons: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard className="size-5" />,
   CheckSquare: <CheckSquare className="size-5" />,
+  Lightbulb: <Lightbulb className="size-5" />,
   Users: <Users className="size-5" />,
   Shield: <Shield className="size-5" />,
 };

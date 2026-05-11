@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { getKanbanColumns } from "@/lib/mock-data";
-import type { KanbanColumn as KanbanColumnType, TaskStatus, TaskItem } from "@/types";
+import { useCallback } from "react";
+import { useTaskStore, getKanbanColumns } from "@/lib/store/task-store";
+import type { TaskStatus, TaskItem } from "@/types";
 import { TaskColumn } from "./task-column";
 import { AddTaskDialog } from "./add-task-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -10,53 +10,33 @@ import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function KanbanBoard() {
-  const [columns, setColumns] = useState<KanbanColumnType[]>(getKanbanColumns);
+  const tasks = useTaskStore((s) => s.tasks);
+  const moveTask = useTaskStore((s) => s.moveTask);
+  const addTask = useTaskStore((s) => s.addTask);
 
-  const handleTaskCreate = useCallback((task: TaskItem) => {
-    setColumns((prev) =>
-      prev.map((col) =>
-        col.id === "todo"
-          ? { ...col, tasks: [...col.tasks, task] }
-          : col
-      )
-    );
-  }, []);
+  const columns = getKanbanColumns(tasks);
+
+  const handleTaskCreate = useCallback(
+    (task: TaskItem) => {
+      addTask(task);
+    },
+    [addTask]
+  );
 
   const handleStatusChange = useCallback(
     (taskId: string, newStatus: TaskStatus) => {
-      setColumns((prev) => {
-        const updated = prev.map((col) => ({
-          ...col,
-          tasks: col.tasks.filter((t) => t.id !== taskId),
-        }));
-
-        const taskToMove = prev
-          .flatMap((col) => col.tasks)
-          .find((t) => t.id === taskId);
-
-        if (taskToMove) {
-          const movedTask: TaskItem = {
-            ...taskToMove,
-            status: newStatus,
-            updatedAt: new Date(),
-          };
-          const targetCol = updated.find((c) => c.id === newStatus);
-          if (targetCol) {
-            targetCol.tasks.push(movedTask);
-          }
-        }
-
-        return updated;
-      });
+      moveTask(taskId, newStatus);
     },
-    []
+    [moveTask]
   );
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tasks</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Tasks
+          </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Drag tasks between columns or use workflow actions to change status
           </p>

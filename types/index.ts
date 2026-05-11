@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "employee";
 
-export type TaskStatus = "todo" | "in-progress" | "review" | "done";
+export type TaskStatus = "backlog" | "todo" | "in-progress" | "review" | "done";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
@@ -16,6 +16,16 @@ export interface User {
   createdAt: Date;
   isActive: boolean;
   permissions: PermissionAction[];
+}
+
+export interface Comment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  parentId: string | null;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface TaskItem {
