@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import { SIDEBAR_LINKS, MOCK_CURRENT_USER } from "@/lib/mock-data";
 import { useSidebar } from "./sidebar-context";
-import { ThemeToggle } from "./theme-toggle";
 
 const linkIcons: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard className="size-5" />,
@@ -176,18 +175,15 @@ export function Sidebar() {
     <>
       <aside
         className={cn(
-          "hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col transition-all duration-300",
+          "hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col z-50 transition-all duration-300",
           isCollapsed ? "lg:w-16" : "lg:w-64"
         )}
       >
         <div className="relative flex flex-col flex-1 bg-sidebar-background border-r border-sidebar-border">
           <SidebarContent isCollapsed={isCollapsed} />
-          <div className="flex items-center justify-center h-10 border-t border-sidebar-border">
-            <ThemeToggle />
-          </div>
           <button
             onClick={toggle}
-            className="absolute -right-3 top-5 flex items-center justify-center size-6 rounded-full border border-sidebar-border bg-sidebar-background text-muted-foreground hover:text-foreground transition-colors shadow-sm"
+            className="absolute -right-3 top-8 flex items-center justify-center size-6 rounded-full border border-sidebar-border bg-sidebar-background text-muted-foreground hover:text-foreground transition-colors shadow-sm"
           >
             {isCollapsed ? (
               <PanelLeft className="size-3.5" />

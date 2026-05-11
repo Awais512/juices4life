@@ -2,6 +2,7 @@
 
 import { useSidebar } from "./sidebar-context";
 import { cn } from "@/lib/utils";
+import { Header } from "./header";
 
 export function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
@@ -13,7 +14,8 @@ export function DashboardContent({ children }: { children: React.ReactNode }) {
         isCollapsed ? "lg:pl-16" : "lg:pl-64"
       )}
     >
-      <div className="p-4 lg:p-6 pt-16 lg:pt-6">{children}</div>
+      <Header />
+      <div className="p-4 lg:p-6">{children}</div>
     </main>
   );
 }
