@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -17,37 +18,64 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { getMockUserById, getPriorityColor } from "@/lib/mock-data";
 import type { TaskItem, TaskStatus } from "@/types";
-import { Calendar, User, ArrowRight, Tag } from "lucide-react";
+import {
+  Calendar,
+  User,
+  Tag,
+  Play,
+  CheckCheck,
+  ArrowLeft,
+  Eye,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  getValidTransitions,
+  getTransitionLabel,
+} from "./transitions";
 
 interface TaskCardProps {
   task: TaskItem;
   onStatusChange: (taskId: string, newStatus: TaskStatus) => void;
 }
 
-const statusOptions: { value: TaskStatus; label: string }[] = [
-  { value: "todo", label: "To Do" },
-  { value: "in-progress", label: "In Progress" },
-  { value: "done", label: "Done" },
-];
+const statusMeta: Record<TaskStatus, { dot: string; label: string }> = {
+  "todo": { dot: "bg-muted-foreground", label: "To Do" },
+  "in-progress": { dot: "bg-primary", label: "In Progress" },
+  "review": { dot: "bg-violet-500", label: "Review" },
+  "done": { dot: "bg-emerald-500", label: "Done" },
+};
+
+const transitionIcons: Record<string, React.ReactNode> = {
+  "todo->in-progress": <Play className="size-3.5" />,
+  "in-progress->review": <Eye className="size-3.5" />,
+  "in-progress->todo": <ArrowLeft className="size-3.5" />,
+  "review->done": <CheckCheck className="size-3.5" />,
+  "review->in-progress": <ArrowLeft className="size-3.5" />,
+  "review->todo": <ArrowLeft className="size-3.5" />,
+};
+
+function getPrimaryTransition(from: TaskStatus): TaskStatus | null {
+  if (from === "todo") return "in-progress";
+  if (from === "in-progress") return "review";
+  if (from === "review") return "done";
+  return null;
+}
 
 export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   const [open, setOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const assignee = getMockUserById(task.assigneeId);
+  const meta = statusMeta[task.status];
+  const transitions = getValidTransitions(task.status);
+  const primaryNext = getPrimaryTransition(task.status);
 
   function handleDragStart(e: React.DragEvent<HTMLDivElement>) {
-    e.dataTransfer.setData("text/plain", task.id);
+    e.dataTransfer.setData(
+      "text/plain",
+      JSON.stringify({ id: task.id, fromStatus: task.status })
+    );
     e.dataTransfer.effectAllowed = "move";
     setIsDragging(true);
   }
@@ -73,12 +101,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           <CardContent className="p-3 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
-                <div className={cn(
-                  "size-2 rounded-full shrink-0 mt-1.5",
-                  task.status === "todo" && "bg-muted-foreground",
-                  task.status === "in-progress" && "bg-primary",
-                  task.status === "done" && "bg-emerald-500"
-                )} />
+                <div className={cn("size-2 rounded-full shrink-0 mt-1.5", meta.dot)} />
                 <h4 className="text-sm font-medium text-foreground leading-snug line-clamp-2">
                   {task.title}
                 </h4>
@@ -103,18 +126,42 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
               <Badge className={cn("text-[10px] px-2 py-0.5 font-medium", getPriorityColor(task.priority))}>
                 {task.priority}
               </Badge>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Avatar className="size-6">
-                    <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
-                      {assignee?.avatar ?? "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">
-                  {assignee?.name ?? "Unassigned"}
-                </TooltipContent>
-              </Tooltip>
+              <div className="flex items-center gap-1">
+                {primaryNext && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onStatusChange(task.id, primaryNext);
+                        }}
+                      >
+                        {transitionIcons[`${task.status}->${primaryNext}`] ?? (
+                          <ArrowLeft className="size-3.5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {getTransitionLabel(task.status, primaryNext)}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Avatar className="size-6">
+                      <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">
+                        {assignee?.avatar ?? "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {assignee?.name ?? "Unassigned"}
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -123,12 +170,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
           <DialogContent className="sm:max-w-lg border-border/50 bg-card">
             <DialogHeader>
               <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-                <div className={cn(
-                  "size-2.5 rounded-full",
-                  task.status === "todo" && "bg-muted-foreground",
-                  task.status === "in-progress" && "bg-primary",
-                  task.status === "done" && "bg-emerald-500"
-                )} />
+                <div className={cn("size-2.5 rounded-full", meta.dot)} />
                 {task.title}
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground pt-1">
@@ -185,29 +227,43 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
 
                 <div className="space-y-2">
                   <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                    <ArrowRight className="size-3" />
                     Status
                   </span>
-                  <Select
-                    value={task.status}
-                    onValueChange={(value) => {
-                      onStatusChange(task.id, value as TaskStatus);
-                      setOpen(false);
-                    }}
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <div className={cn("size-2 rounded-full", meta.dot)} />
+                    <span className="text-sm text-foreground">{meta.label}</span>
+                  </div>
                 </div>
               </div>
+
+              {transitions.length > 0 && (
+                <div className="space-y-2 pt-1 border-t border-border/50">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Workflow Actions
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {transitions.map((nextStatus) => {
+                      const nextMeta = statusMeta[nextStatus];
+                      return (
+                        <Button
+                          key={nextStatus}
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5 h-8 text-sm border-border/50"
+                          onClick={() => {
+                            onStatusChange(task.id, nextStatus);
+                            setOpen(false);
+                          }}
+                        >
+                          {transitionIcons[`${task.status}->${nextStatus}`]}
+                          <span>{getTransitionLabel(task.status, nextStatus)}</span>
+                          <div className={cn("size-1.5 rounded-full", nextMeta.dot)} />
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {task.tags.length > 0 && (
                 <div className="space-y-2">

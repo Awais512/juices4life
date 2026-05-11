@@ -107,6 +107,7 @@ export function DashboardHome() {
                     "size-2 rounded-full shrink-0",
                     task.status === "todo" && "bg-muted-foreground",
                     task.status === "in-progress" && "bg-primary",
+                    task.status === "review" && "bg-violet-500",
                     task.status === "done" && "bg-emerald-500"
                   )} />
                   <div className="flex-1 min-w-0">
@@ -140,13 +141,13 @@ export function DashboardHome() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">To Do</span>
-                  <span className="font-medium text-foreground">{stats.totalTasks - stats.tasksInProgress - stats.tasksDone}</span>
+                  <span className="font-medium text-foreground">{stats.totalTasks - stats.tasksInProgress - stats.tasksInReview - stats.tasksDone}</span>
                 </div>
                 <div className="h-2 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full bg-muted-foreground transition-all duration-500"
                     style={{
-                      width: `${((stats.totalTasks - stats.tasksInProgress - stats.tasksDone) / stats.totalTasks) * 100}%`,
+                      width: `${((stats.totalTasks - stats.tasksInProgress - stats.tasksInReview - stats.tasksDone) / stats.totalTasks) * 100}%`,
                     }}
                   />
                 </div>
@@ -161,6 +162,20 @@ export function DashboardHome() {
                     className="h-full rounded-full bg-primary transition-all duration-500"
                     style={{
                       width: `${(stats.tasksInProgress / stats.totalTasks) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">In Review</span>
+                  <span className="font-medium text-foreground">{stats.tasksInReview}</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-violet-500 transition-all duration-500"
+                    style={{
+                      width: `${(stats.tasksInReview / stats.totalTasks) * 100}%`,
                     }}
                   />
                 </div>

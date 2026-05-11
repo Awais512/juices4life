@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "employee";
 
-export type TaskStatus = "todo" | "in-progress" | "done";
+export type TaskStatus = "todo" | "in-progress" | "review" | "done";
 
 export type TaskPriority = "low" | "medium" | "high" | "urgent";
 

@@ -58,7 +58,7 @@ export function KanbanBoard() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">Tasks</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Drag tasks between columns or click to change status
+            Drag tasks between columns or use workflow actions to change status
           </p>
         </div>
         <div className="flex items-center gap-2">

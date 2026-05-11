@@ -102,7 +102,7 @@ export const MOCK_TASKS: TaskItem[] = [
     id: "t3",
     title: "Build dashboard analytics",
     description: "Design and implement interactive charts for user engagement metrics, revenue tracking, and real-time data visualization.",
-    status: "in-progress",
+    status: "review",
     priority: "high",
     assigneeId: "u4",
     createdBy: "u1",
@@ -141,7 +141,7 @@ export const MOCK_TASKS: TaskItem[] = [
     id: "t6",
     title: "Create onboarding flow",
     description: "Design a guided onboarding experience with interactive tutorial steps, tooltips, and progress tracking for new users.",
-    status: "in-progress",
+    status: "review",
     priority: "high",
     assigneeId: "u2",
     createdBy: "u6",
@@ -214,6 +214,7 @@ export function getKanbanColumns(): KanbanColumn[] {
   const columns: KanbanColumn[] = [
     { id: "todo", title: "To Do", tasks: [] },
     { id: "in-progress", title: "In Progress", tasks: [] },
+    { id: "review", title: "Review", tasks: [] },
     { id: "done", title: "Done", tasks: [] },
   ];
 

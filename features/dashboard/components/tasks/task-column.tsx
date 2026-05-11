@@ -4,7 +4,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import type { KanbanColumn as KanbanColumnType, TaskStatus } from "@/types";
 import { TaskCard } from "./task-card";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Ban } from "lucide-react";
+import { canTransition } from "./transitions";
 
 interface TaskColumnProps {
   column: KanbanColumnType;
@@ -14,20 +15,40 @@ interface TaskColumnProps {
 const columnStyles: Record<TaskStatus, { accent: string; label: string }> = {
   todo: { accent: "bg-muted-foreground", label: "text-muted-foreground" },
   "in-progress": { accent: "bg-primary", label: "text-primary" },
+  review: { accent: "bg-violet-500", label: "text-violet-500" },
   done: { accent: "bg-emerald-500", label: "text-emerald-500" },
 };
 
 export function TaskColumn({ column, onStatusChange }: TaskColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isInvalidTarget, setIsInvalidTarget] = useState(false);
   const style = columnStyles[column.id];
 
+  function parseDragData(e: React.DragEvent): { id: string; fromStatus: TaskStatus } | null {
+    try {
+      return JSON.parse(e.dataTransfer.getData("text/plain"));
+    } catch {
+      return null;
+    }
+  }
+
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
+    const data = parseDragData(e);
+    if (data && !canTransition(data.fromStatus, column.id)) {
+      e.dataTransfer.dropEffect = "none";
+      return;
+    }
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }
 
   function handleDragEnter(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
+    const data = parseDragData(e);
+    if (data && !canTransition(data.fromStatus, column.id)) {
+      setIsInvalidTarget(true);
+      return;
+    }
     setIsDragOver(true);
   }
 
@@ -35,16 +56,20 @@ export function TaskColumn({ column, onStatusChange }: TaskColumnProps) {
     const relatedTarget = e.relatedTarget as Node | null;
     if (!e.currentTarget.contains(relatedTarget)) {
       setIsDragOver(false);
+      setIsInvalidTarget(false);
     }
   }
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
     setIsDragOver(false);
-    const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) {
-      onStatusChange(taskId, column.id);
-    }
+    setIsInvalidTarget(false);
+
+    const data = parseDragData(e);
+    if (!data) return;
+    if (!canTransition(data.fromStatus, column.id)) return;
+
+    onStatusChange(data.id, column.id);
   }
 
   return (
@@ -68,7 +93,8 @@ export function TaskColumn({ column, onStatusChange }: TaskColumnProps) {
       <div
         className={cn(
           "flex flex-col gap-3 min-h-[200px] rounded-xl transition-all duration-200",
-          isDragOver && "bg-primary/5 ring-2 ring-primary/30 ring-dashed"
+          isDragOver && !isInvalidTarget && "bg-primary/5 ring-2 ring-primary/30 ring-dashed",
+          isInvalidTarget && "bg-destructive/5 ring-2 ring-destructive/30 ring-dashed"
         )}
       >
         {column.tasks.map((task) => (
@@ -80,15 +106,28 @@ export function TaskColumn({ column, onStatusChange }: TaskColumnProps) {
           <div
             className={cn(
               "flex flex-col items-center justify-center py-12 text-center border-2 border-dashed rounded-xl transition-all duration-200",
-              isDragOver
+              isDragOver && !isInvalidTarget
                 ? "border-primary/40 bg-primary/5"
-                : "border-border/50 bg-muted/10"
+                : isInvalidTarget
+                  ? "border-destructive/40 bg-destructive/5"
+                  : "border-border/50 bg-muted/10"
             )}
           >
-            <GripVertical className={cn("size-6 mb-2", isDragOver ? "text-primary/40" : "text-muted-foreground/40")} />
-            <p className={cn("text-xs font-medium", isDragOver ? "text-primary/60" : "text-muted-foreground/60")}>
-              {isDragOver ? "Drop here" : "No tasks yet"}
-            </p>
+            {isInvalidTarget ? (
+              <>
+                <Ban className="size-6 mb-2 text-destructive/40" />
+                <p className="text-xs font-medium text-destructive/60">
+                  Invalid transition
+                </p>
+              </>
+            ) : (
+              <>
+                <GripVertical className={cn("size-6 mb-2", isDragOver ? "text-primary/40" : "text-muted-foreground/40")} />
+                <p className={cn("text-xs font-medium", isDragOver ? "text-primary/60" : "text-muted-foreground/60")}>
+                  {isDragOver ? "Drop here" : "No tasks yet"}
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>
