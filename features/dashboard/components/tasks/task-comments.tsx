@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { useTaskStore, getTaskComments } from "@/lib/store/task-store";
 import { getMockUserById } from "@/lib/mock-data";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { Reply, MessageSquare } from "lucide-react";
+import { useUser } from "@/features/auth/components/user-provider";
 
 interface TaskCommentsProps {
   taskId: string;
@@ -35,13 +35,14 @@ function CommentThread({
 }) {
   const [replying, setReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const user = useUser();
   const addComment = useTaskStore((s) => s.addComment);
   const inputRef = useRef<HTMLInputElement>(null);
   const author = getMockUserById(comment.authorId);
 
   function handleReply() {
-    if (!replyText.trim()) return;
-    addComment(taskId, replyText.trim(), comment.id);
+    if (!replyText.trim() || !user) return;
+    addComment(taskId, replyText.trim(), user.id, comment.id);
     setReplyText("");
     setReplying(false);
   }
@@ -140,6 +141,7 @@ function CommentThread({
 
 export function TaskComments({ taskId }: TaskCommentsProps) {
   const comments = useTaskStore((s) => s.comments);
+  const user = useUser();
   const addComment = useTaskStore((s) => s.addComment);
   const [newComment, setNewComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -152,7 +154,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   async function handleSubmit() {
     if (!newComment.trim()) return;
     setSubmitting(true);
-    addComment(taskId, newComment.trim());
+    if (!user) return;
+    addComment(taskId, newComment.trim(), user.id);
     setNewComment("");
     setSubmitting(false);
   }

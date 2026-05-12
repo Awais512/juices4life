@@ -1,38 +1,114 @@
 "use server";
 
-import { MOCK_USERS } from "@/lib/mock-data";
-import type { LoginCredentials, RegisterData } from "../types/auth-types";
+import { createClient } from "@/lib/supabase/server";
+import { loginSchema, type LoginFormData } from "../schemas/auth-schema";
+import { redirect } from "next/navigation";
 
-export async function loginAction(credentials: LoginCredentials) {
-  await new Promise((resolve) => setTimeout(resolve, 600));
+export async function loginAction(data: LoginFormData) {
+  const parsed = loginSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false as const, error: "Invalid form data" };
+  }
 
-  const user = MOCK_USERS.find((u) => u.email === credentials.email);
+  const supabase = await createClient();
 
-  if (!user) {
+  const { error } = await supabase.auth.signInWithPassword({
+    email: parsed.data.email,
+    password: parsed.data.password,
+  });
+
+  if (error) {
     return { success: false as const, error: "Invalid email or password" };
   }
 
-  return {
-    success: true as const,
-    data: { user, token: "mock-jwt-token" },
-  };
-}
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-export async function registerAction(data: RegisterData) {
-  await new Promise((resolve) => setTimeout(resolve, 600));
-
-  const exists = MOCK_USERS.some((u) => u.email === data.email);
-  if (exists) {
-    return { success: false as const, error: "Email already registered" };
+  if (!authUser) {
+    return { success: false as const, error: "Failed to get user" };
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
+
   return {
     success: true as const,
-    data: { message: "Registration successful" },
+    data: {
+      user: profile
+        ? {
+            id: profile.id,
+            name: profile.name,
+            email: profile.email,
+            role: profile.role as "admin" | "employee",
+            avatar: profile.avatar,
+            department: profile.department,
+            createdAt: new Date(profile.created_at),
+            isActive: profile.is_active,
+            permissions: profile.permissions,
+          }
+        : {
+            id: authUser.id,
+            name: authUser.user_metadata?.name ?? authUser.email?.split("@")[0] ?? "",
+            email: authUser.email ?? "",
+            role: (authUser.user_metadata?.role as "admin" | "employee") ?? "employee",
+            avatar: "",
+            department: "",
+            createdAt: new Date(authUser.created_at),
+            isActive: true,
+            permissions: ["read"],
+          },
+    },
   };
 }
 
 export async function logoutAction() {
-  await new Promise((resolve) => setTimeout(resolve, 200));
-  return { success: true as const };
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
+export async function getCurrentUser() {
+  const supabase = await createClient();
+
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", authUser.id)
+    .single();
+
+  if (profile) {
+    return {
+      id: profile.id,
+      name: profile.name,
+      email: profile.email,
+      role: profile.role as "admin" | "employee",
+      avatar: profile.avatar,
+      department: profile.department,
+      createdAt: new Date(profile.created_at),
+      isActive: profile.is_active,
+      permissions: profile.permissions,
+    };
+  }
+
+  return {
+    id: authUser.id,
+    name: (authUser.user_metadata?.name as string) ?? authUser.email?.split("@")[0] ?? "",
+    email: authUser.email ?? "",
+    role: (authUser.user_metadata?.role as "admin" | "employee") ?? "employee",
+    avatar: "",
+    department: "",
+    createdAt: new Date(authUser.created_at),
+    isActive: true,
+    permissions: ["read"],
+  };
 }

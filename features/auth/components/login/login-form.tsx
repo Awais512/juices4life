@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,13 +139,7 @@ export function LoginForm() {
             {isLoading ? "Signing in..." : "Sign in"}
           </Button>
           <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/register"
-              className="text-primary font-medium hover:underline underline-offset-4 transition-all"
-            >
-              Create one
-            </Link>
+            Juices 4 Life &mdash; Task Management
           </p>
         </CardFooter>
       </form>

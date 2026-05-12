@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MOCK_TASKS, MOCK_COMMENTS, MOCK_CURRENT_USER } from "@/lib/mock-data";
+import { MOCK_TASKS, MOCK_COMMENTS } from "@/lib/mock-data";
 import type { TaskItem, TaskStatus, Comment } from "@/types";
 
 interface TaskState {
@@ -8,7 +8,7 @@ interface TaskState {
   addTask: (task: TaskItem) => void;
   moveTask: (taskId: string, newStatus: TaskStatus) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
-  addComment: (taskId: string, content: string, parentId?: string) => void;
+  addComment: (taskId: string, content: string, authorId: string, parentId?: string) => void;
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
@@ -34,14 +34,14 @@ export const useTaskStore = create<TaskState>((set) => ({
       ),
     })),
 
-  addComment: (taskId, content, parentId) =>
+  addComment: (taskId, content, authorId, parentId) =>
     set((state) => ({
       comments: [
         ...state.comments,
         {
           id: `c${Date.now()}`,
           taskId,
-          authorId: MOCK_CURRENT_USER.id,
+          authorId,
           parentId: parentId ?? null,
           content,
           createdAt: new Date(),

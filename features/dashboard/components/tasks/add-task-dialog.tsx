@@ -21,9 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_USERS, MOCK_CURRENT_USER } from "@/lib/mock-data";
+import { MOCK_USERS } from "@/lib/mock-data";
 import type { TaskItem, TaskPriority } from "@/types";
 import { Plus, X } from "lucide-react";
+import { useUser } from "@/features/auth/components/user-provider";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ interface AddTaskDialogProps {
 const DEFAULT_PRIORITY: TaskPriority = "medium";
 
 export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogProps) {
+  const user = useUser();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -90,7 +92,7 @@ export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogP
       status: defaultToBacklog ? "backlog" : "todo",
       priority,
       assigneeId,
-      createdBy: MOCK_CURRENT_USER.id,
+      createdBy: user?.id ?? "unknown",
       createdAt: new Date(),
       updatedAt: new Date(),
       dueDate: dueDate ? new Date(dueDate) : null,

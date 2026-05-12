@@ -25,8 +25,10 @@ import {
   PanelLeftClose,
   Lightbulb,
 } from "lucide-react";
-import { SIDEBAR_LINKS, MOCK_CURRENT_USER } from "@/lib/mock-data";
+import { SIDEBAR_LINKS } from "@/lib/mock-data";
 import { useSidebar } from "./sidebar-context";
+import { useUser } from "@/features/auth/components/user-provider";
+import { logoutAction } from "@/features/auth/actions/auth-actions";
 
 const linkIcons: Record<string, React.ReactNode> = {
   LayoutDashboard: <LayoutDashboard className="size-5" />,
@@ -45,10 +47,14 @@ function SidebarContent({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const user = useUser();
 
-  function handleLogout() {
+  async function handleLogout() {
+    await logoutAction();
     router.push("/login");
   }
+
+  if (!user) return null;
 
   return (
     <div className="flex h-full flex-col">
@@ -80,15 +86,15 @@ function SidebarContent({
         )}
       >
         <div className="size-9 shrink-0 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-foreground border border-border">
-          {MOCK_CURRENT_USER.avatar}
+          {user.avatar || user.name.charAt(0).toUpperCase()}
         </div>
         {!isCollapsed && (
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-medium text-foreground truncate">
-              {MOCK_CURRENT_USER.name}
+              {user.name}
             </span>
             <span className="text-[11px] text-muted-foreground capitalize truncate">
-              {MOCK_CURRENT_USER.role}
+              {user.role}
             </span>
           </div>
         )}
