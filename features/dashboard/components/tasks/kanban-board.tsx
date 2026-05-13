@@ -1,18 +1,27 @@
 "use client";
 
-import { useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useTaskStore, getKanbanColumns } from "@/lib/store/task-store";
 import type { TaskStatus, TaskItem } from "@/types";
 import { TaskColumn } from "./task-column";
 import { AddTaskDialog } from "./add-task-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Filter } from "lucide-react";
+import { Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function KanbanBoard() {
   const tasks = useTaskStore((s) => s.tasks);
   const moveTask = useTaskStore((s) => s.moveTask);
   const addTask = useTaskStore((s) => s.addTask);
+  const loadData = useTaskStore((s) => s.loadData);
+  const loaded = useTaskStore((s) => s.loaded);
+  const loading = useTaskStore((s) => s.loading);
+
+  useEffect(() => {
+    if (!loaded && !loading) {
+      loadData();
+    }
+  }, [loaded, loading, loadData]);
 
   const columns = getKanbanColumns(tasks);
 
@@ -30,6 +39,14 @@ export function KanbanBoard() {
     [moveTask]
   );
 
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -43,7 +60,7 @@ export function KanbanBoard() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="text-sm h-9 border-border/50">
-            <Filter className="size-4" data-icon="inline-start" />
+            <Filter className="size-4" />
             Filter
           </Button>
           <AddTaskDialog onTaskCreate={handleTaskCreate} />

@@ -1,10 +1,18 @@
 import { create } from "zustand";
-import { MOCK_TASKS, MOCK_COMMENTS } from "@/lib/mock-data";
 import type { TaskItem, TaskStatus, Comment } from "@/types";
+import { createTaskAction, updateTaskStatusAction, addCommentAction, fetchTasksWithData } from "@/features/auth/actions/task-actions";
+import { listEmployees } from "@/features/auth/actions/invite-actions";
+
+export type UserBrief = { id: string; name: string; avatar: string };
 
 interface TaskState {
   tasks: TaskItem[];
   comments: Comment[];
+  users: UserBrief[];
+  loaded: boolean;
+  loading: boolean;
+  setData: (tasks: TaskItem[], comments: Comment[], users: UserBrief[]) => void;
+  loadData: () => Promise<void>;
   addTask: (task: TaskItem) => void;
   moveTask: (taskId: string, newStatus: TaskStatus) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
@@ -12,20 +20,43 @@ interface TaskState {
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
-  tasks: [...MOCK_TASKS],
-  comments: [...MOCK_COMMENTS],
+  tasks: [],
+  comments: [],
+  users: [],
+  loaded: false,
+  loading: false,
+
+  setData: (tasks, comments, users) =>
+    set({ tasks, comments, users, loaded: true, loading: false }),
+
+  loadData: async () => {
+    set({ loading: true });
+    const [tasksRes, usersRes] = await Promise.all([
+      fetchTasksWithData(),
+      listEmployees(),
+    ]);
+    set({
+      tasks: tasksRes.tasks,
+      comments: tasksRes.comments,
+      users: usersRes.map((u: any) => ({ id: u.id, name: u.name, avatar: u.avatar })),
+      loaded: true,
+      loading: false,
+    });
+  },
 
   addTask: (task) =>
     set((state) => ({ tasks: [...state.tasks, task] })),
 
-  moveTask: (taskId, newStatus) =>
+  moveTask: (taskId, newStatus) => {
+    updateTaskStatusAction(taskId, newStatus);
     set((state) => ({
       tasks: state.tasks.map((t) =>
         t.id === taskId
           ? { ...t, status: newStatus, updatedAt: new Date() }
           : t
       ),
-    })),
+    }));
+  },
 
   updateTask: (taskId, updates) =>
     set((state) => ({
@@ -34,7 +65,8 @@ export const useTaskStore = create<TaskState>((set) => ({
       ),
     })),
 
-  addComment: (taskId, content, authorId, parentId) =>
+  addComment: (taskId, content, authorId, parentId) => {
+    addCommentAction(taskId, content, parentId);
     set((state) => ({
       comments: [
         ...state.comments,
@@ -48,10 +80,14 @@ export const useTaskStore = create<TaskState>((set) => ({
           updatedAt: new Date(),
         },
       ],
-    })),
+    }));
+  },
 }));
 
-// Selectors
+export function getUserById(users: UserBrief[], id: string): UserBrief | undefined {
+  return users.find((u) => u.id === id);
+}
+
 export function getBoardTasks(tasks: TaskItem[]): TaskItem[] {
   return tasks.filter((t) => t.status !== "backlog");
 }

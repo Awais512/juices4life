@@ -18,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getMockUserById, getPriorityColor } from "@/lib/mock-data";
+import { useTaskStore, getUserById } from "@/lib/store/task-store";
+import { getPriorityColor } from "@/lib/mock-data";
 import type { TaskItem, TaskStatus } from "@/types";
 import {
   Calendar,
@@ -75,7 +76,8 @@ function getPrimaryTransition(from: TaskStatus): TaskStatus | null {
 export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   const [open, setOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const assignee = getMockUserById(task.assigneeId);
+  const users = useTaskStore((s) => s.users);
+  const assignee = getUserById(users, task.assigneeId);
   const meta = statusMeta[task.status];
   const transitions = getValidTransitions(task.status);
   const primaryNext = getPrimaryTransition(task.status);

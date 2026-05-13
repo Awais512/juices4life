@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MOCK_USERS } from "@/lib/mock-data";
+import { useTaskStore, getUserById } from "@/lib/store/task-store";
+import { createTaskAction } from "@/features/auth/actions/task-actions";
 import type { TaskItem, TaskPriority } from "@/types";
 import { Plus, X } from "lucide-react";
 import { useUser } from "@/features/auth/components/user-provider";
@@ -37,15 +38,17 @@ const DEFAULT_PRIORITY: TaskPriority = "medium";
 
 export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogProps) {
   const user = useUser();
+  const users = useTaskStore((s) => s.users);
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>(DEFAULT_PRIORITY);
-  const [assigneeId, setAssigneeId] = useState(MOCK_USERS[0].id);
+  const [assigneeId, setAssigneeId] = useState(users[0]?.id ?? "");
   const [dueDate, setDueDate] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [titleError, setTitleError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   function addTag() {
     const trimmed = tagInput.trim().toLowerCase();
@@ -70,14 +73,14 @@ export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogP
     setTitle("");
     setDescription("");
     setPriority(DEFAULT_PRIORITY);
-    setAssigneeId(MOCK_USERS[0].id);
+    setAssigneeId(users[0]?.id ?? "");
     setDueDate("");
     setTagInput("");
     setTags([]);
     setTitleError(false);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!title.trim()) {
@@ -85,30 +88,32 @@ export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogP
       return;
     }
 
-    const newTask: TaskItem = {
-      id: `t${Date.now()}`,
+    setSubmitting(true);
+
+    const result = await createTaskAction({
       title: title.trim(),
       description: description.trim(),
-      status: defaultToBacklog ? "backlog" : "todo",
       priority,
       assigneeId,
-      createdBy: user?.id ?? "unknown",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      dueDate: dueDate ? new Date(dueDate) : null,
+      dueDate: dueDate || null,
       tags,
-    };
+      status: defaultToBacklog ? "backlog" : "todo",
+    });
 
-    onTaskCreate(newTask);
-    resetForm();
-    setOpen(false);
+    setSubmitting(false);
+
+    if (result.success) {
+      onTaskCreate(result.data);
+      resetForm();
+      setOpen(false);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="text-sm h-9">
-          <Plus className="size-4" data-icon="inline-start" />
+          <Plus className="size-4" />
           New Task
         </Button>
       </DialogTrigger>
@@ -186,9 +191,9 @@ export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogP
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MOCK_USERS.filter((u) => u.isActive).map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name}
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -263,10 +268,13 @@ export function AddTaskDialog({ onTaskCreate, defaultToBacklog }: AddTaskDialogP
                 resetForm();
                 setOpen(false);
               }}
+              disabled={submitting}
             >
               Cancel
             </Button>
-            <Button type="submit">Create Task</Button>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Creating..." : "Create Task"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

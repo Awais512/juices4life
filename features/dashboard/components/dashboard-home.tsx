@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import {
   ListTodo,
@@ -9,19 +9,31 @@ import {
   Users,
   TrendingUp,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MOCK_USERS, getMockUserById, getPriorityColor } from "@/lib/mock-data";
+import { getPriorityColor } from "@/lib/mock-data";
 import { getDashboardStats } from "../utils/dashboard-utils";
-import { useTaskStore, getBoardTasks } from "@/lib/store/task-store";
+import { useTaskStore, getBoardTasks, getUserById } from "@/lib/store/task-store";
 
 export function DashboardHome() {
   const tasks = useTaskStore((s) => s.tasks);
+  const users = useTaskStore((s) => s.users);
+  const loaded = useTaskStore((s) => s.loaded);
+  const loading = useTaskStore((s) => s.loading);
+  const loadData = useTaskStore((s) => s.loadData);
+
+  useEffect(() => {
+    if (!loaded && !loading) {
+      loadData();
+    }
+  }, [loaded, loading, loadData]);
+
   const boardTasks = useMemo(() => getBoardTasks(tasks), [tasks]);
   const employeeCount = useMemo(
-    () => MOCK_USERS.filter((u) => u.role === "employee").length,
-    []
+    () => users.length,
+    [users]
   );
   const stats = useMemo(
     () => getDashboardStats(boardTasks, employeeCount),
@@ -66,6 +78,27 @@ export function DashboardHome() {
         .slice(0, 5),
     [boardTasks]
   );
+
+  const adminCount = users.filter((u) => {
+    const profile = u as any;
+    return false;
+  }).length;
+
+  // Get admin count via the users in store - will rely on a different lookup
+  const userStats = useMemo(() => {
+    return {
+      total: users.length,
+      active: users.length,
+    };
+  }, [users]);
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -122,7 +155,7 @@ export function DashboardHome() {
           <CardContent>
             <div className="space-y-1">
               {recentTasks.map((task) => {
-                const assignee = getMockUserById(task.assigneeId);
+                const assignee = getUserById(users, task.assigneeId);
                 return (
                   <div
                     key={task.id}
@@ -243,7 +276,7 @@ export function DashboardHome() {
             <div className="mt-6 grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-muted/30 p-3 text-center">
                 <p className="text-2xl font-bold text-foreground">
-                  {MOCK_USERS.length}
+                  {userStats.total}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Total Users
@@ -251,15 +284,15 @@ export function DashboardHome() {
               </div>
               <div className="rounded-lg bg-muted/30 p-3 text-center">
                 <p className="text-2xl font-bold text-foreground">
-                  {MOCK_USERS.filter((u) => u.role === "admin").length}
+                  {stats.totalEmployees}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
-                  Admins
+                  Employees
                 </p>
               </div>
               <div className="rounded-lg bg-muted/30 p-3 text-center">
                 <p className="text-2xl font-bold text-foreground">
-                  {MOCK_USERS.filter((u) => u.isActive).length}
+                  {userStats.active}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Active

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useTaskStore, getBacklogTasks } from "@/lib/store/task-store";
-import { getMockUserById, getPriorityColor } from "@/lib/mock-data";
+import { useState, useMemo, useEffect } from "react";
+import { useTaskStore, getBacklogTasks, getUserById } from "@/lib/store/task-store";
+import { getPriorityColor } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,6 +23,7 @@ import {
   User,
   Inbox,
   Lightbulb,
+  Loader2,
 } from "lucide-react";
 import type { TaskItem, TaskStatus } from "@/types";
 
@@ -30,7 +31,17 @@ export function BacklogPage() {
   const tasks = useTaskStore((s) => s.tasks);
   const moveTask = useTaskStore((s) => s.moveTask);
   const addTask = useTaskStore((s) => s.addTask);
+  const loaded = useTaskStore((s) => s.loaded);
+  const loading = useTaskStore((s) => s.loading);
+  const loadData = useTaskStore((s) => s.loadData);
+  const users = useTaskStore((s) => s.users);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!loaded && !loading) {
+      loadData();
+    }
+  }, [loaded, loading, loadData]);
 
   const backlogTasks = useMemo(() => getBacklogTasks(tasks), [tasks]);
 
@@ -50,6 +61,14 @@ export function BacklogPage() {
 
   function handleTaskCreate(newTask: TaskItem) {
     addTask({ ...newTask, status: "backlog" as TaskStatus });
+  }
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
@@ -99,7 +118,7 @@ export function BacklogPage() {
           <ScrollArea className="w-full">
             <div className="space-y-2 min-w-[600px]">
               {filtered.map((task) => {
-                const assignee = getMockUserById(task.assigneeId);
+                const assignee = getUserById(users, task.assigneeId);
                 return (
                   <div
                     key={task.id}

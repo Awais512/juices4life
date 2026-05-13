@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useTaskStore, getTaskComments } from "@/lib/store/task-store";
-import { getMockUserById } from "@/lib/mock-data";
+import { useTaskStore, getTaskComments, getUserById } from "@/lib/store/task-store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Reply, MessageSquare } from "lucide-react";
@@ -29,16 +28,17 @@ function CommentThread({
   replies,
   taskId,
 }: {
-  comment: { id: string; authorId: string; content: string; createdAt: Date; updatedAt: Date; taskId?: string };
+  comment: { id: string; authorId: string; content: string; createdAt: Date; updatedAt: Date };
   replies: { id: string; authorId: string; content: string; createdAt: Date; updatedAt: Date }[];
   taskId: string;
 }) {
   const [replying, setReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
   const user = useUser();
+  const users = useTaskStore((s) => s.users);
   const addComment = useTaskStore((s) => s.addComment);
   const inputRef = useRef<HTMLInputElement>(null);
-  const author = getMockUserById(comment.authorId);
+  const author = getUserById(users, comment.authorId);
 
   function handleReply() {
     if (!replyText.trim() || !user) return;
@@ -109,7 +109,7 @@ function CommentThread({
       {replies.length > 0 && (
         <div className="ml-9 border-l-2 border-border/50 pl-3 space-y-3">
           {replies.map((reply) => {
-            const replyAuthor = getMockUserById(reply.authorId);
+            const replyAuthor = getUserById(users, reply.authorId);
             return (
               <div key={reply.id} className="flex gap-2.5">
                 <Avatar className="size-6 shrink-0 mt-0.5">
