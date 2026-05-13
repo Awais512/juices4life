@@ -3,6 +3,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 const protectedRoutes = ["/", "/tasks", "/backlog", "/employees", "/permissions"];
 const authRoutes = ["/login"];
+const publicRoutes = ["/invite"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,6 +12,9 @@ export async function middleware(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
   const isAuth = authRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + "/")
+  );
+  const isPublic = publicRoutes.some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
 

@@ -14,9 +14,26 @@ CREATE TABLE IF NOT EXISTS profiles (
 );
 
 -- ============================================
+-- INVITATIONS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS invitations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email TEXT NOT NULL,
+  token TEXT NOT NULL UNIQUE,
+  accepted_at TIMESTAMPTZ,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_by UUID NOT NULL REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
 -- ROW LEVEL SECURITY
 -- ============================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invitations DISABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT

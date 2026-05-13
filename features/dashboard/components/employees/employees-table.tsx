@@ -11,10 +11,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MOCK_USERS } from "@/lib/mock-data";
 import type { User, UserRole, PermissionAction } from "@/types";
-import { Plus, Search, Edit2, Trash2, X, Check, Shield, Lock, Unlock } from "lucide-react";
+import { Search, Edit2, Trash2, X, Check, Shield, Lock, Unlock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InviteDialog } from "./invite-dialog";
 
 const ALL_ACTIONS: PermissionAction[] = ["create", "read", "update", "delete"];
 
@@ -25,17 +25,16 @@ const actionLabels: Record<PermissionAction, string> = {
   delete: "Delete",
 };
 
-export function EmployeesTable() {
-  const [users, setUsers] = useState<User[]>(MOCK_USERS);
+export function EmployeesTable({
+  initialEmployees,
+}: {
+  initialEmployees: User[];
+}) {
+  const [users, setUsers] = useState<User[]>(initialEmployees);
   const [search, setSearch] = useState("");
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  const [addRole, setAddRole] = useState<UserRole>("employee");
-  const [addPermissions, setAddPermissions] = useState<PermissionAction[]>(["read"]);
-
   const [editPermissions, setEditPermissions] = useState<PermissionAction[]>([]);
 
   const filteredUsers = users.filter(
@@ -80,43 +79,12 @@ export function EmployeesTable() {
     setEditingUser(null);
   }
 
-  function toggleAddPermission(action: PermissionAction) {
-    setAddPermissions((prev) =>
-      prev.includes(action)
-        ? prev.filter((a) => a !== action)
-        : [...prev, action]
-    );
-  }
-
   function toggleEditPermission(action: PermissionAction) {
     setEditPermissions((prev) =>
       prev.includes(action)
         ? prev.filter((a) => a !== action)
         : [...prev, action]
     );
-  }
-
-  function handleAdd(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const role = (formData.get("add-role") as UserRole) || "employee";
-    const perms = role === "admin" ? [...ALL_ACTIONS] : addPermissions;
-
-    const newUser: User = {
-      id: `u${Date.now()}`,
-      name: formData.get("add-name") as string,
-      email: formData.get("add-email") as string,
-      role,
-      department: (formData.get("add-dept") as string) || "General",
-      avatar: ((formData.get("add-name") as string)?.split(" ").map((n) => n[0]).join("") || "?").slice(0, 2).toUpperCase(),
-      createdAt: new Date(),
-      isActive: true,
-      permissions: perms,
-    };
-    setUsers((prev) => [...prev, newUser]);
-    setIsAddOpen(false);
-    setAddRole("employee");
-    setAddPermissions(["read"]);
   }
 
   return (
@@ -128,111 +96,7 @@ export function EmployeesTable() {
             Manage your team members, their roles, and individual permissions
           </p>
         </div>
-        <Dialog
-          open={isAddOpen}
-          onOpenChange={(open) => {
-            setIsAddOpen(open);
-            if (!open) {
-              setAddRole("employee");
-              setAddPermissions(["read"]);
-            }
-          }}
-        >
-          <DialogTrigger asChild>
-            <Button size="sm" className="text-sm h-9">
-              <Plus className="size-4" data-icon="inline-start" />
-              Add Employee
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md border-border/50 bg-card">
-            <DialogHeader>
-              <DialogTitle>Add Employee</DialogTitle>
-              <DialogDescription>
-                Add a new team member and set their permissions
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleAdd}>
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label htmlFor="add-name">Full name</Label>
-                  <Input id="add-name" name="add-name" placeholder="John Doe" required className="h-10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="add-email">Email</Label>
-                  <Input id="add-email" name="add-email" type="email" placeholder="john@juices4life.com" required className="h-10" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="add-role">Role</Label>
-                    <Select
-                      name="add-role"
-                      value={addRole}
-                      onValueChange={(v) => {
-                        setAddRole(v as UserRole);
-                        if (v === "admin") setAddPermissions([...ALL_ACTIONS]);
-                      }}
-                    >
-                      <SelectTrigger id="add-role" className="h-10">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="employee">Employee</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="add-dept">Department</Label>
-                    <Input id="add-dept" name="add-dept" placeholder="Engineering" className="h-10" />
-                  </div>
-                </div>
-
-                {addRole === "employee" && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium flex items-center gap-1.5">
-                      <Shield className="size-3.5 text-muted-foreground" />
-                      Permissions
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {ALL_ACTIONS.map((action) => {
-                        const enabled = addPermissions.includes(action);
-                        return (
-                          <div
-                            key={action}
-                            className={cn(
-                              "flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors",
-                              enabled ? "bg-emerald-500/5" : "bg-muted/20"
-                            )}
-                          >
-                            <div className="flex items-center gap-2">
-                              {enabled ? (
-                                <Unlock className="size-3.5 text-emerald-400" />
-                              ) : (
-                                <Lock className="size-3.5 text-muted-foreground" />
-                              )}
-                              <span className="text-sm text-foreground">{actionLabels[action]}</span>
-                            </div>
-                            <Switch
-                              checked={enabled}
-                              onCheckedChange={() => toggleAddPermission(action)}
-                              className={cn(enabled ? "data-[state=checked]:bg-emerald-500" : "")}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <DialogFooter className="mt-4">
-                <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit">Add Employee</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <InviteDialog />
       </div>
 
       <Card className="border-border/50 bg-card/50">
