@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { TaskItem, TaskStatus, Comment } from "@/types";
-import { createTaskAction, updateTaskStatusAction, addCommentAction, fetchTasksWithData } from "@/features/auth/actions/task-actions";
+import { createTaskAction, updateTaskStatusAction, updateTaskAction, deleteTaskAction, addCommentAction, fetchTasksWithData } from "@/features/auth/actions/task-actions";
 import { listEmployees } from "@/features/auth/actions/invite-actions";
 
 export type UserBrief = { id: string; name: string; avatar: string };
@@ -16,6 +16,7 @@ interface TaskState {
   addTask: (task: TaskItem) => void;
   moveTask: (taskId: string, newStatus: TaskStatus) => void;
   updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
+  removeTask: (taskId: string) => void;
   addComment: (taskId: string, content: string, authorId: string, parentId?: string) => void;
 }
 
@@ -58,12 +59,30 @@ export const useTaskStore = create<TaskState>((set) => ({
     }));
   },
 
-  updateTask: (taskId, updates) =>
+  updateTask: (taskId, updates) => {
+    const { title, description, priority, assigneeId, dueDate, tags } = updates as any;
+    updateTaskAction(taskId, { title, description, priority, assigneeId, dueDate, tags });
     set((state) => ({
       tasks: state.tasks.map((t) =>
-        t.id === taskId ? { ...t, ...updates, updatedAt: new Date() } : t
+        t.id === taskId
+          ? {
+              ...t,
+              ...updates,
+              dueDate: dueDate ? (typeof dueDate === "string" ? new Date(dueDate) : dueDate) : null,
+              updatedAt: new Date(),
+            }
+          : t
       ),
-    })),
+    }));
+  },
+
+  removeTask: (taskId) => {
+    deleteTaskAction(taskId);
+    set((state) => ({
+      tasks: state.tasks.filter((t) => t.id !== taskId),
+      comments: state.comments.filter((c) => c.taskId !== taskId),
+    }));
+  },
 
   addComment: (taskId, content, authorId, parentId) => {
     addCommentAction(taskId, content, parentId);

@@ -25,6 +25,7 @@ import {
   Lightbulb,
   Loader2,
 } from "lucide-react";
+import { useCan } from "@/features/auth/utils/use-can";
 import type { TaskItem, TaskStatus } from "@/types";
 
 export function BacklogPage() {
@@ -36,6 +37,8 @@ export function BacklogPage() {
   const loadData = useTaskStore((s) => s.loadData);
   const users = useTaskStore((s) => s.users);
   const [search, setSearch] = useState("");
+  const canCreate = useCan("create", "tasks");
+  const canUpdate = useCan("update", "tasks");
 
   useEffect(() => {
     if (!loaded && !loading) {
@@ -89,7 +92,7 @@ export function BacklogPage() {
               )}
             </p>
           </div>
-          <AddTaskDialog onTaskCreate={handleTaskCreate} defaultToBacklog />
+          {canCreate && <AddTaskDialog onTaskCreate={handleTaskCreate} defaultToBacklog />}
         </div>
 
         <div className="relative max-w-sm">
@@ -193,21 +196,23 @@ export function BacklogPage() {
                         </TooltipContent>
                       </Tooltip>
 
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
-                            onClick={() => handleMoveToBoard(task)}
-                          >
-                            <ArrowRight className="size-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="text-xs">
-                          Move to To Do
-                        </TooltipContent>
-                      </Tooltip>
+                      {canUpdate && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                              onClick={() => handleMoveToBoard(task)}
+                            >
+                              <ArrowRight className="size-3.5" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            Move to To Do
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
                 );

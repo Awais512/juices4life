@@ -6,6 +6,7 @@ import type { TaskStatus, TaskItem } from "@/types";
 import { TaskColumn } from "./task-column";
 import { AddTaskDialog } from "./add-task-dialog";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { useCan } from "@/features/auth/utils/use-can";
 import { Filter, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,7 @@ export function KanbanBoard() {
   const loadData = useTaskStore((s) => s.loadData);
   const loaded = useTaskStore((s) => s.loaded);
   const loading = useTaskStore((s) => s.loading);
+  const canCreate = useCan("create", "tasks");
 
   useEffect(() => {
     if (!loaded && !loading) {
@@ -58,13 +60,9 @@ export function KanbanBoard() {
             Drag tasks between columns or use workflow actions to change status
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="text-sm h-9 border-border/50">
-            <Filter className="size-4" />
-            Filter
-          </Button>
+        {canCreate && (
           <AddTaskDialog onTaskCreate={handleTaskCreate} />
-        </div>
+        )}
       </div>
 
       <ScrollArea className="w-full pb-4">

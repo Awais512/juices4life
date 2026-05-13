@@ -117,6 +117,48 @@ export async function updateTaskStatusAction(taskId: string, newStatus: string) 
   return { success: true as const };
 }
 
+export async function updateTaskAction(
+  taskId: string,
+  data: {
+    title?: string;
+    description?: string;
+    priority?: string;
+    assigneeId?: string | null;
+    dueDate?: string | null;
+    tags?: string[];
+  }
+) {
+  const admin = createAdminClient();
+
+  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+  if (data.title !== undefined) updateData.title = data.title;
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.priority !== undefined) updateData.priority = data.priority;
+  if (data.assigneeId !== undefined) updateData.assignee_id = data.assigneeId || null;
+  if (data.dueDate !== undefined) updateData.due_date = data.dueDate || null;
+  if (data.tags !== undefined) updateData.tags = data.tags;
+
+  const { error } = await admin.from("tasks").update(updateData).eq("id", taskId);
+
+  if (error) {
+    return { success: false as const, error: "Failed to update task" };
+  }
+
+  return { success: true as const };
+}
+
+export async function deleteTaskAction(taskId: string) {
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("tasks").delete().eq("id", taskId);
+
+  if (error) {
+    return { success: false as const, error: "Failed to delete task" };
+  }
+
+  return { success: true as const };
+}
+
 export async function addCommentAction(
   taskId: string,
   content: string,
