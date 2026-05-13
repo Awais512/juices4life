@@ -175,7 +175,8 @@ export async function listEmployees() {
   } = await supabase.auth.getUser();
   if (!user) return [];
 
-  const { data: profiles } = await supabase
+  const adminClient = createAdminClient();
+  const { data: profiles } = await adminClient
     .from("profiles")
     .select("*")
     .order("created_at", { ascending: false });
