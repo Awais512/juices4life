@@ -2,6 +2,15 @@ import { create } from "zustand";
 import type { TaskItem, TaskStatus, Comment } from "@/types";
 import { createTaskAction, updateTaskStatusAction, updateTaskAction, deleteTaskAction, addCommentAction, fetchTasksWithData } from "@/features/auth/actions/task-actions";
 import { listEmployees } from "@/features/auth/actions/invite-actions";
+import { toast } from "sonner";
+
+const STATUS_DISPLAY: Record<string, string> = {
+  backlog: "Backlog",
+  todo: "To Do",
+  "in-progress": "In Progress",
+  review: "Review",
+  done: "Done",
+};
 
 export type UserBrief = { id: string; name: string; avatar: string };
 
@@ -14,10 +23,10 @@ interface TaskState {
   setData: (tasks: TaskItem[], comments: Comment[], users: UserBrief[]) => void;
   loadData: () => Promise<void>;
   addTask: (task: TaskItem) => void;
-  moveTask: (taskId: string, newStatus: TaskStatus) => void;
-  updateTask: (taskId: string, updates: Partial<TaskItem>) => void;
-  removeTask: (taskId: string) => void;
-  addComment: (taskId: string, content: string, authorId: string, parentId?: string) => void;
+  moveTask: (taskId: string, newStatus: TaskStatus) => Promise<void>;
+  updateTask: (taskId: string, updates: Partial<TaskItem>) => Promise<void>;
+  removeTask: (taskId: string) => Promise<void>;
+  addComment: (taskId: string, content: string, authorId: string, parentId?: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskState>((set) => ({
@@ -48,58 +57,64 @@ export const useTaskStore = create<TaskState>((set) => ({
   addTask: (task) =>
     set((state) => ({ tasks: [...state.tasks, task] })),
 
-  moveTask: (taskId, newStatus) => {
-    updateTaskStatusAction(taskId, newStatus);
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === taskId
-          ? { ...t, status: newStatus, updatedAt: new Date() }
-          : t
-      ),
-    }));
+  moveTask: async (taskId, newStatus) => {
+    const result = await updateTaskStatusAction(taskId, newStatus);
+    if (result.success) {
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId ? { ...t, status: newStatus, updatedAt: new Date() } : t
+        ),
+      }));
+      toast.success(`Moved to ${STATUS_DISPLAY[newStatus] || newStatus}`);
+    } else {
+      toast.error(result.error || "Failed to move task");
+    }
   },
 
-  updateTask: (taskId, updates) => {
+  updateTask: async (taskId, updates) => {
     const { title, description, priority, assigneeId, dueDate, tags } = updates as any;
-    updateTaskAction(taskId, { title, description, priority, assigneeId, dueDate, tags });
-    set((state) => ({
-      tasks: state.tasks.map((t) =>
-        t.id === taskId
-          ? {
-              ...t,
-              ...updates,
-              dueDate: dueDate ? (typeof dueDate === "string" ? new Date(dueDate) : dueDate) : null,
-              updatedAt: new Date(),
-            }
-          : t
-      ),
-    }));
+    const result = await updateTaskAction(taskId, { title, description, priority, assigneeId, dueDate, tags });
+    if (result.success) {
+      set((state) => ({
+        tasks: state.tasks.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                ...updates,
+                dueDate: dueDate ? (typeof dueDate === "string" ? new Date(dueDate) : dueDate) : null,
+                updatedAt: new Date(),
+              }
+            : t
+        ),
+      }));
+      toast.success("Task updated");
+    } else {
+      toast.error(result.error || "Failed to update task");
+    }
   },
 
-  removeTask: (taskId) => {
-    deleteTaskAction(taskId);
-    set((state) => ({
-      tasks: state.tasks.filter((t) => t.id !== taskId),
-      comments: state.comments.filter((c) => c.taskId !== taskId),
-    }));
+  removeTask: async (taskId) => {
+    const result = await deleteTaskAction(taskId);
+    if (result.success) {
+      set((state) => ({
+        tasks: state.tasks.filter((t) => t.id !== taskId),
+        comments: state.comments.filter((c) => c.taskId !== taskId),
+      }));
+      toast.success("Task deleted");
+    } else {
+      toast.error(result.error || "Failed to delete task");
+    }
   },
 
-  addComment: (taskId, content, authorId, parentId) => {
-    addCommentAction(taskId, content, parentId);
-    set((state) => ({
-      comments: [
-        ...state.comments,
-        {
-          id: `c${Date.now()}`,
-          taskId,
-          authorId,
-          parentId: parentId ?? null,
-          content,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ],
-    }));
+  addComment: async (taskId, content, authorId, parentId) => {
+    const result = await addCommentAction(taskId, content, parentId);
+    if (result.success && result.data) {
+      set((state) => ({
+        comments: [...state.comments, result.data as Comment],
+      }));
+    } else {
+      toast.error(result.error || "Failed to add comment");
+    }
   },
 }));
 

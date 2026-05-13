@@ -40,9 +40,9 @@ function CommentThread({
   const inputRef = useRef<HTMLInputElement>(null);
   const author = getUserById(users, comment.authorId);
 
-  function handleReply() {
+  async function handleReply() {
     if (!replyText.trim() || !user) return;
-    addComment(taskId, replyText.trim(), user.id, comment.id);
+    await addComment(taskId, replyText.trim(), user.id, comment.id);
     setReplyText("");
     setReplying(false);
   }
@@ -154,8 +154,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   async function handleSubmit() {
     if (!newComment.trim()) return;
     setSubmitting(true);
-    if (!user) return;
-    addComment(taskId, newComment.trim(), user.id);
+    if (!user) { setSubmitting(false); return; }
+    await addComment(taskId, newComment.trim(), user.id);
     setNewComment("");
     setSubmitting(false);
   }

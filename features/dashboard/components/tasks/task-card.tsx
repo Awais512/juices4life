@@ -100,6 +100,8 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [editing, setEditing] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [tagInput, setTagInput] = useState("");
 
   const users = useTaskStore((s) => s.users);
@@ -144,13 +146,17 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
     setDeleteConfirm(false);
   }
 
-  function handleSave() {
-    updateTask(task.id, { ...form, dueDate: form.dueDate || null } as any);
+  async function handleSave() {
+    setSaving(true);
+    await updateTask(task.id, { ...form, dueDate: form.dueDate || null } as any);
+    setSaving(false);
     setEditing(false);
   }
 
-  function handleDelete() {
-    removeTask(task.id);
+  async function handleDelete() {
+    setDeleting(true);
+    await removeTask(task.id);
+    setDeleting(false);
     setOpen(false);
     setDeleteConfirm(false);
   }
@@ -217,6 +223,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
                   <DropdownMenuContent align="end" className="min-w-[120px]">
                     {canUpdate && (
                       <DropdownMenuItem
+                        disabled={saving || deleting}
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpen(true);
@@ -229,6 +236,7 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
                     )}
                     {canDelete && (
                       <DropdownMenuItem
+                        disabled={saving || deleting}
                         className="text-destructive focus:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -325,11 +333,11 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
                     Delete &ldquo;{task.title}&rdquo;? This action cannot be undone.
                   </p>
                   <div className="flex justify-center gap-3">
-                    <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+                    <Button variant="outline" type="button" onClick={() => setOpen(false)} disabled={deleting}>
                       Cancel
                     </Button>
-                    <Button variant="destructive" onClick={handleDelete}>
-                      Delete
+                    <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                      {deleting ? "Deleting..." : "Delete"}
                     </Button>
                   </div>
                 </div>
@@ -431,8 +439,8 @@ export function TaskCard({ task, onStatusChange }: TaskCardProps) {
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2 border-t border-border/50">
-                    <Button variant="outline" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>Save Changes</Button>
+                    <Button variant="outline" type="button" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
                   </div>
                 </div>
               ) : (
