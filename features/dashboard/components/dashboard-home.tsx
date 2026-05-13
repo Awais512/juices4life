@@ -7,7 +7,6 @@ import {
   PlayCircle,
   CheckCircle2,
   Users,
-  TrendingUp,
   Clock,
   Loader2,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { getPriorityColor } from "@/lib/mock-data";
 import { getDashboardStats } from "../utils/dashboard-utils";
 import { useTaskStore, getBoardTasks, getUserById } from "@/lib/store/task-store";
+import { DashboardCharts } from "./dashboard-charts";
 
 export function DashboardHome() {
   const tasks = useTaskStore((s) => s.tasks);
@@ -79,19 +79,6 @@ export function DashboardHome() {
     [boardTasks]
   );
 
-  const adminCount = users.filter((u) => {
-    const profile = u as any;
-    return false;
-  }).length;
-
-  // Get admin count via the users in store - will rely on a different lookup
-  const userStats = useMemo(() => {
-    return {
-      total: users.length,
-      active: users.length,
-    };
-  }, [users]);
-
   if (!loaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -141,6 +128,8 @@ export function DashboardHome() {
           );
         })}
       </div>
+
+      <DashboardCharts />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
@@ -195,108 +184,21 @@ export function DashboardHome() {
 
         <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
           <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <TrendingUp className="size-4 text-muted-foreground" />
-                Task Distribution
-              </CardTitle>
-            </div>
+            <CardTitle className="text-base font-semibold">Team Overview</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">To Do</span>
-                  <span className="font-medium text-foreground">
-                    {stats.totalTasks -
-                      stats.tasksInProgress -
-                      stats.tasksInReview -
-                      stats.tasksDone}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-muted-foreground transition-all duration-500"
-                    style={{
-                      width: `${((stats.totalTasks - stats.tasksInProgress - stats.tasksInReview - stats.tasksDone) / stats.totalTasks) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">In Progress</span>
-                  <span className="font-medium text-foreground">
-                    {stats.tasksInProgress}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500"
-                    style={{
-                      width: `${(stats.tasksInProgress / stats.totalTasks) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">In Review</span>
-                  <span className="font-medium text-foreground">
-                    {stats.tasksInReview}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-violet-500 transition-all duration-500"
-                    style={{
-                      width: `${(stats.tasksInReview / stats.totalTasks) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Done</span>
-                  <span className="font-medium text-foreground">
-                    {stats.tasksDone}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                    style={{
-                      width: `${(stats.tasksDone / stats.totalTasks) * 100}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="rounded-lg bg-muted/30 p-3 text-center">
-                <p className="text-2xl font-bold text-foreground">
-                  {userStats.total}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Total Users
-                </p>
+                <p className="text-2xl font-bold text-foreground">{users.length}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Total Users</p>
               </div>
               <div className="rounded-lg bg-muted/30 p-3 text-center">
-                <p className="text-2xl font-bold text-foreground">
-                  {stats.totalEmployees}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Employees
-                </p>
+                <p className="text-2xl font-bold text-foreground">{stats.totalEmployees}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Employees</p>
               </div>
               <div className="rounded-lg bg-muted/30 p-3 text-center">
-                <p className="text-2xl font-bold text-foreground">
-                  {userStats.active}
-                </p>
-                <p className="text-[11px] text-muted-foreground mt-1">
-                  Active
-                </p>
+                <p className="text-2xl font-bold text-foreground">{users.length}</p>
+                <p className="text-[11px] text-muted-foreground mt-1">Active</p>
               </div>
             </div>
           </CardContent>
