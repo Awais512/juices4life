@@ -3,6 +3,29 @@
 import { createClient } from "@/lib/supabase/server";
 import { loginSchema, type LoginFormData } from "../schemas/auth-schema";
 import { redirect } from "next/navigation";
+import { buildPermissionMap, defaultPermissions } from "../utils/permissions";
+
+function mapUser(profile: any) {
+  return {
+    id: profile.id,
+    name: profile.name,
+    email: profile.email,
+    role: profile.role as "admin" | "employee",
+    avatar: profile.avatar,
+    department: profile.department,
+    createdAt: new Date(profile.created_at),
+    isActive: profile.is_active,
+  };
+}
+
+async function fetchPermissions(userId: string, supabase: any) {
+  const { data: permRows } = await supabase
+    .from("user_permissions")
+    .select("resource, action")
+    .eq("user_id", userId);
+
+  return buildPermissionMap(permRows || []);
+}
 
 export async function loginAction(data: LoginFormData) {
   const parsed = loginSchema.safeParse(data);
@@ -35,21 +58,15 @@ export async function loginAction(data: LoginFormData) {
     .eq("id", authUser.id)
     .single();
 
+  const permissions = profile
+    ? await fetchPermissions(authUser.id, supabase)
+    : defaultPermissions();
+
   return {
     success: true as const,
     data: {
       user: profile
-        ? {
-            id: profile.id,
-            name: profile.name,
-            email: profile.email,
-            role: profile.role as "admin" | "employee",
-            avatar: profile.avatar,
-            department: profile.department,
-            createdAt: new Date(profile.created_at),
-            isActive: profile.is_active,
-            permissions: profile.permissions,
-          }
+        ? { ...mapUser(profile), permissions }
         : {
             id: authUser.id,
             name: authUser.user_metadata?.name ?? authUser.email?.split("@")[0] ?? "",
@@ -59,7 +76,7 @@ export async function loginAction(data: LoginFormData) {
             department: "",
             createdAt: new Date(authUser.created_at),
             isActive: true,
-            permissions: ["read"],
+            permissions: defaultPermissions(),
           },
     },
   };
@@ -86,18 +103,12 @@ export async function getCurrentUser() {
     .eq("id", authUser.id)
     .single();
 
+  const permissions = profile
+    ? await fetchPermissions(authUser.id, supabase)
+    : defaultPermissions();
+
   if (profile) {
-    return {
-      id: profile.id,
-      name: profile.name,
-      email: profile.email,
-      role: profile.role as "admin" | "employee",
-      avatar: profile.avatar,
-      department: profile.department,
-      createdAt: new Date(profile.created_at),
-      isActive: profile.is_active,
-      permissions: profile.permissions,
-    };
+    return { ...mapUser(profile), permissions };
   }
 
   return {
@@ -109,6 +120,6 @@ export async function getCurrentUser() {
     department: "",
     createdAt: new Date(authUser.created_at),
     isActive: true,
-    permissions: ["read"],
+    permissions: defaultPermissions(),
   };
 }

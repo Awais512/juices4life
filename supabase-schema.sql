@@ -9,8 +9,19 @@ CREATE TABLE IF NOT EXISTS profiles (
   avatar TEXT NOT NULL DEFAULT '',
   department TEXT NOT NULL DEFAULT '',
   is_active BOOLEAN NOT NULL DEFAULT true,
-  permissions TEXT[] NOT NULL DEFAULT '{read}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ============================================
+-- USER PERMISSIONS TABLE
+-- ============================================
+CREATE TABLE IF NOT EXISTS user_permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  resource TEXT NOT NULL CHECK (resource IN ('tasks', 'backlog', 'employees', 'permissions')),
+  action TEXT NOT NULL CHECK (action IN ('create', 'read', 'update', 'delete')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, resource, action)
 );
 
 -- ============================================
@@ -30,6 +41,7 @@ CREATE TABLE IF NOT EXISTS invitations (
 -- ROW LEVEL SECURITY
 -- ============================================
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invitations DISABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
@@ -42,6 +54,12 @@ CREATE POLICY "Users can view own profile"
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can view own permissions" ON user_permissions;
+
+CREATE POLICY "Users can view own permissions"
+  ON user_permissions FOR SELECT
+  USING (auth.uid() = user_id);
 
 -- ============================================
 -- TRIGGER: Auto-create profile on signup
@@ -59,6 +77,10 @@ BEGIN
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'role', 'employee')
   );
+
+  INSERT INTO user_permissions (user_id, resource, action)
+  VALUES (NEW.id, 'tasks', 'read');
+
   RETURN NEW;
 END;
 $$;

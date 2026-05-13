@@ -6,6 +6,10 @@ export type TaskPriority = "low" | "medium" | "high" | "urgent";
 
 export type PermissionAction = "create" | "read" | "update" | "delete";
 
+export type ResourceType = "tasks" | "backlog" | "employees" | "permissions";
+
+export type PermissionMap = Record<ResourceType, PermissionAction[]>;
+
 export interface User {
   id: string;
   name: string;
@@ -15,7 +19,7 @@ export interface User {
   department: string;
   createdAt: Date;
   isActive: boolean;
-  permissions: PermissionAction[];
+  permissions: PermissionMap;
 }
 
 export interface Comment {

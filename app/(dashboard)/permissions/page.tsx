@@ -1,4 +1,5 @@
 import { PermissionsList } from "@/features/dashboard/components/permissions/permissions-list";
+import { listEmployees } from "@/features/auth/actions/invite-actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -16,5 +17,7 @@ export default async function PermissionsPage() {
 
   if (!profile || profile.role !== "admin") redirect("/");
 
-  return <PermissionsList />;
+  const employees = await listEmployees();
+
+  return <PermissionsList initialUsers={employees} />;
 }

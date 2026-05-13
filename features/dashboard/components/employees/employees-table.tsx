@@ -7,23 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { User, UserRole, PermissionAction } from "@/types";
-import { Search, Edit2, Trash2, X, Check, Shield, Lock, Unlock } from "lucide-react";
+import type { User, UserRole, ResourceType, PermissionAction, PermissionMap } from "@/types";
+import { updateUserPermissions, deleteUserAction, updateEmployeeAction } from "@/features/auth/actions/invite-actions";
+import { ALL_RESOURCES, ALL_ACTIONS, resourceLabels } from "@/features/auth/utils/permissions";
+import { Search, Edit2, Trash2, X, Check, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InviteDialog } from "./invite-dialog";
-
-const ALL_ACTIONS: PermissionAction[] = ["create", "read", "update", "delete"];
-
-const actionLabels: Record<PermissionAction, string> = {
-  create: "Create",
-  read: "Read",
-  update: "Update",
-  delete: "Delete",
-};
 
 export function EmployeesTable({
   initialEmployees,
@@ -35,7 +27,9 @@ export function EmployeesTable({
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [editPermissions, setEditPermissions] = useState<PermissionAction[]>([]);
+  const [editPermissions, setEditPermissions] = useState<PermissionMap>({
+    tasks: [], backlog: [], employees: [], permissions: []
+  });
 
   const filteredUsers = users.filter(
     (u) =>
@@ -43,48 +37,51 @@ export function EmployeesTable({
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  function handleDelete(id: string) {
-    setUsers((prev) => prev.filter((u) => u.id !== id));
-    setDeleteConfirm(null);
+  async function handleDelete(id: string) {
+    await deleteUserAction(id);
+    window.location.reload();
   }
 
   function openEdit(user: User) {
     setEditingUser(user);
-    setEditPermissions([...user.permissions]);
+    setEditPermissions(
+      Object.fromEntries(
+        ALL_RESOURCES.map((r) => [r, [...user.permissions[r]]])
+      ) as PermissionMap
+    );
     setIsEditOpen(true);
   }
 
-  function handleSaveEdit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSaveEdit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editingUser) return;
     const formData = new FormData(event.currentTarget);
+    const name = (formData.get("edit-name") as string) || editingUser.name;
+    const email = (formData.get("edit-email") as string) || editingUser.email;
     const role = (formData.get("edit-role") as UserRole) || editingUser.role;
-    const perms = role === "admin" ? [...ALL_ACTIONS] : editPermissions;
+    const department = (formData.get("edit-dept") as string) || editingUser.department;
 
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === editingUser.id
-          ? {
-              ...u,
-              name: (formData.get("edit-name") as string) || u.name,
-              email: (formData.get("edit-email") as string) || u.email,
-              role,
-              department: (formData.get("edit-dept") as string) || u.department,
-              permissions: perms,
-            }
-          : u
-      )
-    );
-    setIsEditOpen(false);
-    setEditingUser(null);
+    await updateEmployeeAction(editingUser.id, { name, email, role, department });
+
+    const perms = role === "admin"
+      ? { tasks: [...ALL_ACTIONS], backlog: [...ALL_ACTIONS], employees: [...ALL_ACTIONS], permissions: [...ALL_ACTIONS] }
+      : editPermissions;
+
+    await updateUserPermissions(editingUser.id, perms);
+    window.location.reload();
   }
 
-  function toggleEditPermission(action: PermissionAction) {
-    setEditPermissions((prev) =>
-      prev.includes(action)
-        ? prev.filter((a) => a !== action)
-        : [...prev, action]
-    );
+  function toggleEditPermission(resource: ResourceType, action: PermissionAction) {
+    setEditPermissions((prev) => {
+      const actions = [...prev[resource]];
+      const idx = actions.indexOf(action);
+      if (idx >= 0) {
+        actions.splice(idx, 1);
+      } else {
+        actions.push(action);
+      }
+      return { ...prev, [resource]: actions };
+    });
   }
 
   return (
@@ -160,17 +157,17 @@ export function EmployeesTable({
                   </TableCell>
                   <TableCell className="py-3 hidden md:table-cell">
                     <div className="flex gap-1 flex-wrap">
-                      {ALL_ACTIONS.map((action) => (
+                      {ALL_RESOURCES.map((resource) => (
                         <Badge
-                          key={action}
+                          key={resource}
                           className={cn(
-                            "text-[9px] px-1.5 py-0 font-medium",
-                            user.permissions.includes(action)
+                            "text-[9px] px-1.5 py-0 font-medium capitalize",
+                            user.permissions[resource].length > 0
                               ? "bg-emerald-500/10 text-emerald-400"
                               : "bg-muted/30 text-muted-foreground/50"
                           )}
                         >
-                          {action}
+                          {resource}:{user.permissions[resource].length}
                         </Badge>
                       ))}
                     </div>
@@ -278,7 +275,12 @@ export function EmployeesTable({
                     name="edit-role"
                     defaultValue={editingUser?.role}
                     onValueChange={(v) => {
-                      if (v === "admin") setEditPermissions([...ALL_ACTIONS]);
+                      if (v === "admin") setEditPermissions({
+                        tasks: [...ALL_ACTIONS],
+                        backlog: [...ALL_ACTIONS],
+                        employees: [...ALL_ACTIONS],
+                        permissions: [...ALL_ACTIONS],
+                      });
                     }}
                   >
                     <SelectTrigger id="edit-role" className="h-10">
@@ -302,39 +304,38 @@ export function EmployeesTable({
               </div>
 
               {editingUser?.role !== "admin" && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label className="text-sm font-medium flex items-center gap-1.5">
                     <Shield className="size-3.5 text-muted-foreground" />
-                    Permissions
+                    Resource Permissions
                   </Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {ALL_ACTIONS.map((action) => {
-                      const enabled = editPermissions.includes(action);
-                      return (
-                        <div
-                          key={action}
-                          className={cn(
-                            "flex items-center justify-between rounded-lg px-3 py-2.5 transition-colors",
-                            enabled ? "bg-emerald-500/5" : "bg-muted/20"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            {enabled ? (
-                              <Unlock className="size-3.5 text-emerald-400" />
-                            ) : (
-                              <Lock className="size-3.5 text-muted-foreground" />
-                            )}
-                            <span className="text-sm text-foreground">{actionLabels[action]}</span>
-                          </div>
-                          <Switch
-                            checked={enabled}
-                            onCheckedChange={() => toggleEditPermission(action)}
-                            className={cn(enabled ? "data-[state=checked]:bg-emerald-500" : "")}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
+                  {ALL_RESOURCES.map((resource) => (
+                    <div key={resource} className="space-y-1.5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        {resourceLabels(resource)}
+                      </p>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {ALL_ACTIONS.map((action) => {
+                          const enabled = editPermissions[resource].includes(action);
+                          return (
+                            <button
+                              key={action}
+                              type="button"
+                              onClick={() => toggleEditPermission(resource, action)}
+                              className={cn(
+                                "text-[11px] px-2 py-1.5 rounded-md border text-center transition-colors capitalize",
+                                enabled
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-medium"
+                                  : "bg-muted/20 border-border/50 text-muted-foreground hover:border-muted-foreground/30"
+                              )}
+                            >
+                              {action}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

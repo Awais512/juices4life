@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { inviteEmployeeSchema, acceptInviteSchema, type AcceptInviteData } from "../schemas/invite-schema";
 import crypto from "crypto";
+import { buildPermissionMap, defaultPermissions } from "../utils/permissions";
 
 export async function inviteEmployeeAction(email: string) {
   const parsed = inviteEmployeeSchema.safeParse({ email });
@@ -142,12 +143,24 @@ export async function acceptInviteAction(data: AcceptInviteData) {
       name,
       avatar: name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase(),
       department: "General",
-      permissions: ["read"],
     })
     .eq("id", authData.user.id);
 
   if (profileError) {
     return { success: false as const, error: "Account created but profile setup failed" };
+  }
+
+  const defaults = defaultPermissions();
+  const permRows = Object.entries(defaults).flatMap(([resource, actions]) =>
+    actions.map((action) => ({
+      user_id: authData.user.id,
+      resource,
+      action,
+    }))
+  );
+
+  if (permRows.length > 0) {
+    await adminClient.from("user_permissions").insert(permRows);
   }
 
   await adminClient
@@ -183,6 +196,18 @@ export async function listEmployees() {
 
   if (!profiles) return [];
 
+  const { data: permRows } = await adminClient
+    .from("user_permissions")
+    .select("user_id, resource, action");
+
+  const permsByUser: Record<string, { resource: string; action: string }[]> = {};
+  if (permRows) {
+    for (const row of permRows) {
+      if (!permsByUser[row.user_id]) permsByUser[row.user_id] = [];
+      permsByUser[row.user_id].push({ resource: row.resource, action: row.action });
+    }
+  }
+
   return profiles.map((p) => ({
     id: p.id,
     name: p.name,
@@ -192,6 +217,78 @@ export async function listEmployees() {
     department: p.department,
     createdAt: new Date(p.created_at),
     isActive: p.is_active,
-    permissions: p.permissions,
+    permissions: buildPermissionMap(permsByUser[p.id] || []),
   }));
+}
+
+export async function updateUserPermissions(
+  userId: string,
+  permissionMap: Record<string, string[]>
+) {
+  const adminClient = createAdminClient();
+
+  const { error: deleteError } = await adminClient
+    .from("user_permissions")
+    .delete()
+    .eq("user_id", userId);
+
+  if (deleteError) {
+    return { success: false as const, error: "Failed to update permissions" };
+  }
+
+  const rows: { user_id: string; resource: string; action: string }[] = [];
+  for (const [resource, actions] of Object.entries(permissionMap)) {
+    for (const action of actions) {
+      rows.push({ user_id: userId, resource, action });
+    }
+  }
+
+  if (rows.length > 0) {
+    const { error: insertError } = await adminClient
+      .from("user_permissions")
+      .insert(rows);
+
+    if (insertError) {
+      return { success: false as const, error: "Failed to update permissions" };
+    }
+  }
+
+  return { success: true as const };
+}
+
+export async function deleteUserAction(userId: string) {
+  const adminClient = createAdminClient();
+
+  const { error } = await adminClient.auth.admin.deleteUser(userId);
+
+  if (error) {
+    return { success: false as const, error: "Failed to delete user" };
+  }
+
+  return { success: true as const };
+}
+
+export async function updateEmployeeAction(
+  userId: string,
+  data: { name?: string; email?: string; role?: string; department?: string }
+) {
+  const adminClient = createAdminClient();
+
+  const updateData: Record<string, string> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.email !== undefined) updateData.email = data.email;
+  if (data.role !== undefined) updateData.role = data.role;
+  if (data.department !== undefined) updateData.department = data.department;
+
+  if (Object.keys(updateData).length === 0) {
+    return { success: true as const };
+  }
+
+  const { error } = await adminClient.from("profiles").update(updateData).eq("id", userId);
+
+  if (error) {
+    return { success: false as const, error: "Failed to update employee" };
+  }
+
+  return { success: true as const };
 }

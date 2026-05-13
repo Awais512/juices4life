@@ -30,6 +30,9 @@ if (!serviceRoleKey) {
   process.exit(1);
 }
 
+const ALL_RESOURCES = ["tasks", "backlog", "employees", "permissions"];
+const ALL_ACTIONS = ["create", "read", "update", "delete"];
+
 const SEED_USERS = [
   {
     email: "abdul@juices4life.com",
@@ -38,7 +41,7 @@ const SEED_USERS = [
     role: "admin",
     avatar: "AW",
     department: "Management",
-    permissions: ["create", "read", "update", "delete"],
+    permissions: { tasks: [...ALL_ACTIONS], backlog: [...ALL_ACTIONS], employees: [...ALL_ACTIONS], permissions: [...ALL_ACTIONS] },
   },
   {
     email: "yasine@juices4life.com",
@@ -47,7 +50,7 @@ const SEED_USERS = [
     role: "employee",
     avatar: "Y",
     department: "Production",
-    permissions: ["read", "update"],
+    permissions: { tasks: ["read", "update"], backlog: ["read"], employees: ["read"], permissions: [] },
   },
   {
     email: "mohsin@juices4life.com",
@@ -56,7 +59,7 @@ const SEED_USERS = [
     role: "employee",
     avatar: "SM",
     department: "Sales",
-    permissions: ["read"],
+    permissions: { tasks: ["read"], backlog: ["read"], employees: [], permissions: [] },
   },
   {
     email: "shakira@juices4life.com",
@@ -65,7 +68,7 @@ const SEED_USERS = [
     role: "employee",
     avatar: "S",
     department: "Marketing",
-    permissions: ["read", "update", "create"],
+    permissions: { tasks: ["read", "update", "create"], backlog: ["read"], employees: ["read"], permissions: [] },
   },
   {
     email: "elena@juices4life.com",
@@ -74,7 +77,7 @@ const SEED_USERS = [
     role: "employee",
     avatar: "ET",
     department: "Product",
-    permissions: ["read", "update"],
+    permissions: { tasks: ["read", "update"], backlog: ["read"], employees: ["read"], permissions: [] },
   },
   {
     email: "frank@juices4life.com",
@@ -83,7 +86,7 @@ const SEED_USERS = [
     role: "admin",
     avatar: "FO",
     department: "Operations",
-    permissions: ["create", "read", "update", "delete"],
+    permissions: { tasks: [...ALL_ACTIONS], backlog: [...ALL_ACTIONS], employees: [...ALL_ACTIONS], permissions: [...ALL_ACTIONS] },
   },
 ];
 
@@ -119,7 +122,6 @@ async function main() {
         .update({
           avatar: user.avatar,
           department: user.department,
-          permissions: user.permissions,
         })
         .eq("id", data.user.id);
 
@@ -127,6 +129,21 @@ async function main() {
         console.log(`  ⚠️  ${user.email} — created but profile update failed`);
       } else {
         console.log(`  ✅ ${user.email} — created (${user.role})`);
+      }
+
+      const permRows = [];
+      for (const [resource, actions] of Object.entries(user.permissions)) {
+        for (const action of actions) {
+          permRows.push({ user_id: data.user.id, resource, action });
+        }
+      }
+      if (permRows.length > 0) {
+        const { error: permError } = await supabase
+          .from("user_permissions")
+          .insert(permRows);
+        if (permError) {
+          console.log(`  ⚠️  ${user.email} — created but permissions insert failed`);
+        }
       }
     } catch (err) {
       console.error(`  ❌ ${user.email} — ${err.message}`);

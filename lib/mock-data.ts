@@ -1,6 +1,24 @@
-import type { User, TaskItem, KanbanColumn, SidebarLink, PermissionAction, Comment } from "@/types";
+import type { User, TaskItem, KanbanColumn, SidebarLink, PermissionAction, Comment, PermissionMap } from "@/types";
 
-const ALL_PERMISSIONS: PermissionAction[] = ["create", "read", "update", "delete"];
+const ALL_RESOURCES = ["tasks", "backlog", "employees", "permissions"] as const;
+const ALL_ACTIONS: PermissionAction[] = ["create", "read", "update", "delete"];
+
+function fullPerms(): PermissionMap {
+  return {
+    tasks: [...ALL_ACTIONS],
+    backlog: [...ALL_ACTIONS],
+    employees: [...ALL_ACTIONS],
+    permissions: [...ALL_ACTIONS],
+  };
+}
+
+function readPerms(...resources: string[]): PermissionMap {
+  const map: PermissionMap = { tasks: [], backlog: [], employees: [], permissions: [] };
+  for (const r of resources) {
+    if (r in map) (map as any)[r].push("read");
+  }
+  return map;
+}
 
 export const MOCK_USERS: User[] = [
   {
@@ -12,7 +30,7 @@ export const MOCK_USERS: User[] = [
     department: "Management",
     createdAt: new Date("2024-01-15"),
     isActive: true,
-    permissions: [...ALL_PERMISSIONS],
+    permissions: fullPerms(),
   },
   {
     id: "u2",
@@ -23,7 +41,12 @@ export const MOCK_USERS: User[] = [
     department: "Production",
     createdAt: new Date("2024-02-20"),
     isActive: true,
-    permissions: ["read", "update"],
+    permissions: {
+      tasks: ["read", "update"],
+      backlog: ["read"],
+      employees: ["read"],
+      permissions: [],
+    },
   },
   {
     id: "u3",
@@ -34,7 +57,7 @@ export const MOCK_USERS: User[] = [
     department: "Sales",
     createdAt: new Date("2024-03-10"),
     isActive: true,
-    permissions: ["read"],
+    permissions: { tasks: ["read"], backlog: ["read"], employees: [], permissions: [] },
   },
   {
     id: "u4",
@@ -45,7 +68,12 @@ export const MOCK_USERS: User[] = [
     department: "Marketing",
     createdAt: new Date("2024-04-05"),
     isActive: true,
-    permissions: ["read", "update", "create"],
+    permissions: {
+      tasks: ["read", "update", "create"],
+      backlog: ["read"],
+      employees: ["read"],
+      permissions: [],
+    },
   },
   {
     id: "u5",
@@ -56,7 +84,7 @@ export const MOCK_USERS: User[] = [
     department: "Product",
     createdAt: new Date("2024-05-12"),
     isActive: true,
-    permissions: ["read", "update"],
+    permissions: { tasks: ["read", "update"], backlog: ["read"], employees: ["read"], permissions: [] },
   },
   {
     id: "u6",
@@ -67,7 +95,7 @@ export const MOCK_USERS: User[] = [
     department: "Operations",
     createdAt: new Date("2024-01-01"),
     isActive: true,
-    permissions: [...ALL_PERMISSIONS],
+    permissions: fullPerms(),
   },
 ];
 
