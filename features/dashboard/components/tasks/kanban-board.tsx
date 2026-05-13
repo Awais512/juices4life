@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTaskStore, getKanbanColumns, getUserById } from "@/lib/store/task-store";
 import type { TaskStatus, TaskItem, TaskPriority } from "@/types";
 import { TaskColumn } from "./task-column";
@@ -27,10 +28,17 @@ export function KanbanBoard() {
   const loaded = useTaskStore((s) => s.loaded);
   const loading = useTaskStore((s) => s.loading);
   const canCreate = useCan("create", "tasks");
+  const searchParams = useSearchParams();
 
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") || "");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority[]>([]);
   const [assigneeFilter, setAssigneeFilter] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
     if (!loaded && !loading) {
@@ -61,6 +69,7 @@ export function KanbanBoard() {
   const hasFilters = search.trim() || priorityFilter.length > 0 || assigneeFilter;
 
   function clearFilters() {
+    setSearchInput("");
     setSearch("");
     setPriorityFilter([]);
     setAssigneeFilter(null);
@@ -118,8 +127,8 @@ export function KanbanBoard() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search tasks..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="pl-10 h-9 text-sm"
           />
         </div>

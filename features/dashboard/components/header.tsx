@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, LogOut, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -18,10 +19,18 @@ import { logoutAction } from "@/features/auth/actions/auth-actions";
 export function Header() {
   const router = useRouter();
   const user = useUser();
+  const [query, setQuery] = useState("");
 
   async function handleLogout() {
     await logoutAction();
     router.push("/login");
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" && query.trim()) {
+      router.push(`/tasks?search=${encodeURIComponent(query.trim())}`);
+      setQuery("");
+    }
   }
 
   if (!user) return null;
@@ -33,6 +42,9 @@ export function Header() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search tasks, employees..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
             className="pl-9 h-9 bg-muted/50 border-none focus-visible:bg-background"
           />
         </div>
