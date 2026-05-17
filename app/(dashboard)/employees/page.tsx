@@ -15,7 +15,20 @@ export default async function EmployeesPage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "admin") redirect("/");
+  if (profile?.role === "admin") {
+    const employees = await listEmployees();
+    return <EmployeesTable initialEmployees={employees} />;
+  }
+
+  const { data: perm } = await supabase
+    .from("user_permissions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("resource", "employees")
+    .eq("action", "read")
+    .maybeSingle();
+
+  if (!perm) redirect("/");
 
   const employees = await listEmployees();
   return <EmployeesTable initialEmployees={employees} />;

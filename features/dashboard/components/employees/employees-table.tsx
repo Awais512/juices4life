@@ -16,6 +16,7 @@ import { ALL_RESOURCES, ALL_ACTIONS, resourceLabels } from "@/features/auth/util
 import { Search, Edit2, Trash2, X, Check, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InviteDialog } from "./invite-dialog";
+import { useCan } from "@/features/auth/utils/use-can";
 
 export function EmployeesTable({
   initialEmployees,
@@ -30,6 +31,9 @@ export function EmployeesTable({
   const [editPermissions, setEditPermissions] = useState<PermissionMap>({
     tasks: [], backlog: [], employees: [], permissions: []
   });
+
+  const canUpdateEmp = useCan("update", "employees");
+  const canDeleteEmp = useCan("delete", "employees");
 
   const filteredUsers = users.filter(
     (u) =>
@@ -206,22 +210,26 @@ export function EmployeesTable({
                         </div>
                       ) : (
                         <>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-muted-foreground hover:text-foreground"
-                            onClick={() => openEdit(user)}
-                          >
-                            <Edit2 className="size-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => setDeleteConfirm(user.id)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
+                          {canUpdateEmp && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-foreground"
+                              onClick={() => openEdit(user)}
+                            >
+                              <Edit2 className="size-3.5" />
+                            </Button>
+                          )}
+                          {canDeleteEmp && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDeleteConfirm(user.id)}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>

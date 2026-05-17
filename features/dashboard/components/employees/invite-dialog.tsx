@@ -16,9 +16,11 @@ import {
 import { inviteEmployeeAction } from "@/features/auth/actions/invite-actions";
 import { Loader2, Plus, Copy, Check, Mail } from "lucide-react";
 import { useUser } from "@/features/auth/components/user-provider";
+import { useCan } from "@/features/auth/utils/use-can";
 
 export function InviteDialog() {
   const user = useUser();
+  const canInvite = useCan("create", "employees");
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -26,7 +28,7 @@ export function InviteDialog() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  if (user?.role !== "admin") return null;
+  if (!canInvite) return null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

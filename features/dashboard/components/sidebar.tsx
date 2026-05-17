@@ -102,11 +102,11 @@ function SidebarContent({
 
       <ScrollArea className="flex-1 px-3">
         <nav className="flex flex-col gap-1 py-2">
-          {SIDEBAR_LINKS.filter(
-              (link) =>
-                (link.href !== "/employees" && link.href !== "/permissions") ||
-                user.role === "admin"
-            ).map((link) => {
+          {SIDEBAR_LINKS.filter((link) => {
+            if (link.href === "/permissions") return user.role === "admin";
+            if (link.href === "/employees") return user.role === "admin" || user.permissions.employees?.includes("read");
+            return true;
+          }).map((link) => {
             const isActive = pathname === link.href;
             const linkEl = (
               <Link
