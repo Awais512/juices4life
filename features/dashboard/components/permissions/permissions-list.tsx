@@ -33,7 +33,7 @@ function deepEqual(a: PermissionMap, b: PermissionMap): boolean {
 
 export function PermissionsList({ initialUsers }: { initialUsers: User[] }) {
   const [users, setUsers] = useState(() => cloneUsers(initialUsers));
-  const [originalUsers] = useState(() => cloneUsers(initialUsers));
+  const [originalUsers, setOriginalUsers] = useState(() => cloneUsers(initialUsers));
   const [saving, setSaving] = useState(false);
   const [savedToast, setSavedToast] = useState(false);
 
@@ -48,14 +48,23 @@ export function PermissionsList({ initialUsers }: { initialUsers: User[] }) {
       prev.map((u) => {
         if (u.id !== userId || u.role === "admin") return u;
         const perms = { ...u.permissions };
-        const actions = [...perms[resource]];
-        const idx = actions.indexOf(action);
-        if (idx >= 0) {
-          actions.splice(idx, 1);
+        const actions = new Set(perms[resource]);
+
+        if (actions.has(action)) {
+          actions.delete(action);
+          if (action === "read") {
+            actions.delete("create");
+            actions.delete("update");
+            actions.delete("delete");
+          }
         } else {
-          actions.push(action);
+          actions.add(action);
+          if (action !== "read") {
+            actions.add("read");
+          }
         }
-        perms[resource] = actions;
+
+        perms[resource] = [...actions];
         return { ...u, permissions: perms };
       })
     );
@@ -69,6 +78,7 @@ export function PermissionsList({ initialUsers }: { initialUsers: User[] }) {
         console.error("Failed to save permissions for", user.name, result.error);
       }
     }
+    setOriginalUsers(cloneUsers(users));
     setSaving(false);
     setSavedToast(true);
     setTimeout(() => setSavedToast(false), 3000);

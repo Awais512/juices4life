@@ -17,6 +17,7 @@ import { Search, Edit2, Trash2, X, Check, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { InviteDialog } from "./invite-dialog";
 import { useCan } from "@/features/auth/utils/use-can";
+import { useUser } from "@/features/auth/components/user-provider";
 
 export function EmployeesTable({
   initialEmployees,
@@ -34,6 +35,7 @@ export function EmployeesTable({
 
   const canUpdateEmp = useCan("update", "employees");
   const canDeleteEmp = useCan("delete", "employees");
+  const currentUser = useUser();
 
   const filteredUsers = users.filter(
     (u) =>
@@ -77,14 +79,23 @@ export function EmployeesTable({
 
   function toggleEditPermission(resource: ResourceType, action: PermissionAction) {
     setEditPermissions((prev) => {
-      const actions = [...prev[resource]];
-      const idx = actions.indexOf(action);
-      if (idx >= 0) {
-        actions.splice(idx, 1);
+      const actions = new Set(prev[resource]);
+
+      if (actions.has(action)) {
+        actions.delete(action);
+        if (action === "read") {
+          actions.delete("create");
+          actions.delete("update");
+          actions.delete("delete");
+        }
       } else {
-        actions.push(action);
+        actions.add(action);
+        if (action !== "read") {
+          actions.add("read");
+        }
       }
-      return { ...prev, [resource]: actions };
+
+      return { ...prev, [resource]: [...actions] };
     });
   }
 
@@ -130,7 +141,9 @@ export function EmployeesTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user) => {
+                const isOtherAdmin = user.role === "admin" && user.id !== currentUser?.id;
+                return (
                 <TableRow key={user.id} className="border-border/50 hover:bg-muted/30 transition-colors">
                   <TableCell className="py-3">
                     <div className="flex items-center gap-3">
@@ -210,7 +223,7 @@ export function EmployeesTable({
                         </div>
                       ) : (
                         <>
-                          {canUpdateEmp && (
+                          {canUpdateEmp && !isOtherAdmin && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -220,7 +233,7 @@ export function EmployeesTable({
                               <Edit2 className="size-3.5" />
                             </Button>
                           )}
-                          {canDeleteEmp && (
+                          {canDeleteEmp && !isOtherAdmin && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -235,7 +248,8 @@ export function EmployeesTable({
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

@@ -123,3 +123,12 @@ export async function getCurrentUser() {
     permissions: defaultPermissions(),
   };
 }
+
+export async function fetchCurrentPermissions() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return defaultPermissions();
+
+  return fetchPermissions(user.id, supabase);
+}

@@ -105,6 +105,8 @@ function SidebarContent({
           {SIDEBAR_LINKS.filter((link) => {
             if (link.href === "/permissions") return user.role === "admin";
             if (link.href === "/employees") return user.role === "admin" || user.permissions.employees?.includes("read");
+            if (link.href === "/tasks")     return user.role === "admin" || user.permissions.tasks?.includes("read");
+            if (link.href === "/backlog")   return user.role === "admin" || user.permissions.backlog?.includes("read");
             return true;
           }).map((link) => {
             const isActive = pathname === link.href;
